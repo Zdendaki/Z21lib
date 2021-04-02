@@ -78,7 +78,7 @@ namespace Z21lib
 
         private void ParseMessage(byte[] message)
         {
-            int len = message.Length;
+            //int len = message.Length;
 
             switch (message[2])
             {
@@ -142,6 +142,11 @@ namespace Z21lib
                         case 0xF3:
                             MessageReceived?.Invoke(new FirmwareVersionMessage(message[6].FromBCD(), message[7].FromBCD()));
                             return;
+
+                        // LAN_X_LOCO_INFO
+                        case 0xEF:
+                            MessageReceived?.Invoke(LocoInfoMessage.Parse(message));
+                            return;
                     }
                     return;
 
@@ -184,6 +189,23 @@ namespace Z21lib
                 Console.WriteLine(e.Message);
                 Console.ForegroundColor = col;
             }
+        }
+
+        public void GetLocoInfo(int address)
+        {
+            LocoAddress la = new LocoAddress(address);
+            byte[] request = new byte[9];
+            request[0] = 0x09;
+            request[1] = 0x00;
+            request[2] = 0x40;
+            request[3] = 0x00;
+            request[4] = 0xE3;
+            request[5] = 0xF0;
+            request[6] = la.MSB;
+            request[7] = la.LSB;
+            request[8] = (byte)(request[4] ^ request[5] ^ request[6] ^ request[7]);
+
+            Send(request);
         }
     }
 }

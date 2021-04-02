@@ -19,7 +19,11 @@ namespace TestClient
             while (true)
             {
                 string bytes = Console.ReadLine();
-                client.Send(bytes.ToByteArray());
+
+                if (!bytes.StartsWith("LI:"))
+                    client.Send(bytes.ToByteArray());
+                else
+                    client.GetLocoInfo(int.Parse(bytes.Replace("LI:", null)));
             }
         }
 

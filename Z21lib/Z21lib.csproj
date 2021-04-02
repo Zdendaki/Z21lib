@@ -54,6 +54,7 @@
     <Compile Include="Messages\FirmwareVersionMessage.cs" />
     <Compile Include="Messages\FlagsMessage.cs" />
     <Compile Include="Messages\HardwareTypeMessage.cs" />
+    <Compile Include="Messages\LocoInfoMessage.cs" />
     <Compile Include="Messages\LocoModeMessage.cs" />
     <Compile Include="Messages\NotImplementedMessage.cs" />
     <Compile Include="Messages\SerialNumberMessage.cs" />

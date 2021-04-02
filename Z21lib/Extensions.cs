@@ -30,6 +30,11 @@ namespace Z21lib
             return 10 * (input / 16) + (input % 16);
         }
 
+        public static bool Bit(this byte input, int bit)
+        {
+            return (input & (2 ^ bit)) == (2 ^ bit);
+        }
+
         public static ArgumentOutOfRangeException GetException(string param, string message)
         {
             return new ArgumentOutOfRangeException(param, new Exception(message));
