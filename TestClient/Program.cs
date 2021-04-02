@@ -12,13 +12,14 @@ namespace TestClient
     {
         static void Main(string[] args)
         {
-            Client client = new Client(new Z21Info("0.0.0.0", 1234));
+            Client client = new Client(new Z21Info("192.168.1.111", 21105));
             client.MessageReceived += Client_MessageReceived;
 
+            client.Connect();
             while (true)
             {
                 string bytes = Console.ReadLine();
-                client.ParseData(bytes.ToByteArray());
+                client.Send(bytes.ToByteArray());
             }
         }
 

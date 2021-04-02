@@ -167,5 +167,20 @@ namespace Z21lib
                 MessageReceived?.Invoke(new SerialNumberMessage(serial));
             }
         }
+
+        public void Send(byte[] data)
+        {
+            try
+            {
+                Send(data, data.Length);
+            }
+            catch (Exception e)
+            {
+                ConsoleColor col = Console.ForegroundColor;
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(e.Message);
+                Console.ForegroundColor = col;
+            }
+        }
     }
 }
