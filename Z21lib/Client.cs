@@ -32,6 +32,7 @@ namespace Z21lib
             DontFragment = false;
             EnableBroadcast = true;
             BeginReceive(new AsyncCallback(Callback), null);
+            Send(new byte[] { 0x04, 0x00, 0x10, 0x00 });
             Log.Write("Connected to Z21!");
         }
 
