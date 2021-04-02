@@ -6,13 +6,8 @@ using System.Threading.Tasks;
 
 namespace Z21lib.Messages
 {
-    public class Message
+    public class LocoModeMessage : Message
     {
-        public MessageType Type { get; set; }
 
-        public Message(MessageType type)
-        {
-            Type = type;
-        }
     }
 }

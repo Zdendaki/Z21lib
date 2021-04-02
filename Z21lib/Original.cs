@@ -606,12 +606,6 @@ namespace Z21lib
                 Console.WriteLine("Fehler beim Reconnection.");
             }
         }
-
-        public void Dispose()
-        {
-            //LogOFF();
-            Close();
-        }
     }
 
     public class GetLocoInfoEventArgs : EventArgs

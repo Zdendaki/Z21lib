@@ -41,16 +41,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Endianity\BE.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Extensions.cs" />
-    <Compile Include="LE.cs" />
-    <Compile Include="LittleEndianReader.cs" />
+    <Compile Include="Endianity\LE.cs" />
+    <Compile Include="Endianity\LittleEndianReader.cs" />
+    <Compile Include="LocoAddress.cs" />
     <Compile Include="Log.cs" />
     <Compile Include="Messages\BroadcastFlagsMessage.cs" />
     <Compile Include="Messages\CentralState.cs" />
+    <Compile Include="Messages\DeviceCodeMessage.cs" />
     <Compile Include="Messages\FirmwareVersionMessage.cs" />
     <Compile Include="Messages\FlagsMessage.cs" />
     <Compile Include="Messages\HardwareTypeMessage.cs" />
+    <Compile Include="Messages\LocoModeMessage.cs" />
+    <Compile Include="Messages\NotImplementedMessage.cs" />
     <Compile Include="Messages\SerialNumberMessage.cs" />
     <Compile Include="Messages\SystemStateMessage.cs" />
     <Compile Include="Messages\TrackStatusChangedMessage.cs" />

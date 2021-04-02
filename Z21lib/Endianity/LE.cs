@@ -1,15 +1,15 @@
-﻿namespace Z21lib
+﻿namespace Z21lib.Endianity
 {
     static class LE
     {
         public static short ToInt16(byte[] data, int startIndex = 0)
         {
-            return (short)(data[startIndex] | data[startIndex + 1] << 8);
+            return (short)(data[startIndex] | (data[startIndex + 1] << 8));
         }
 
         public static ushort ToUInt16(byte[] data, int startIndex = 0)
         {
-            return (ushort)(data[startIndex] | data[startIndex + 1] << 8);
+            return (ushort)(data[startIndex] | (data[startIndex + 1] << 8));
         }
 
         public static int ToInt32(byte[] data, int startIndex = 0)

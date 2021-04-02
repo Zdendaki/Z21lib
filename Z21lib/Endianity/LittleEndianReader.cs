@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Z21lib
+namespace Z21lib.Endianity
 {
     class LittleEndianReader : IDisposable
     {

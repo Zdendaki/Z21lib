@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
+using Z21lib.Endianity;
 using Z21lib.Messages;
 using static Z21lib.Messages.HardwareTypeMessage;
 
@@ -158,14 +159,15 @@ namespace Z21lib
                     HardwareType hw = (HardwareType)LE.ToUInt32(message, 4);
                     MessageReceived?.Invoke(new HardwareTypeMessage(hw, message[9].FromBCD(), message[8].FromBCD()));
                     return;
+
+                // LAN_GET_CODE
+                case 0x18:
+                    MessageReceived?.Invoke(new DeviceCodeMessage((DeviceCode)message[4]));
+                    return;
             }
 
-            
-            if (message[2] == 0x10)
-            {
-                int serial = LE.ToInt32(message, 4);
-                MessageReceived?.Invoke(new SerialNumberMessage(serial));
-            }
+
+            MessageReceived?.Invoke(new NotImplementedMessage(message));
         }
 
         public void Send(byte[] data)
