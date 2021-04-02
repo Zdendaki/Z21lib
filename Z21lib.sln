@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31112.23
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Z21lib", "Z21lib\Z21lib.csproj", "{7E825C5A-CE85-4346-96B3-EF6DF6B6F208}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestClient", "TestClient\TestClient.csproj", "{094BAA85-DE90-43F7-B918-AC34515F3458}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7E825C5A-CE85-4346-96B3-EF6DF6B6F208}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E825C5A-CE85-4346-96B3-EF6DF6B6F208}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7E825C5A-CE85-4346-96B3-EF6DF6B6F208}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E825C5A-CE85-4346-96B3-EF6DF6B6F208}.Release|Any CPU.Build.0 = Release|Any CPU
+		{094BAA85-DE90-43F7-B918-AC34515F3458}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{094BAA85-DE90-43F7-B918-AC34515F3458}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{094BAA85-DE90-43F7-B918-AC34515F3458}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{094BAA85-DE90-43F7-B918-AC34515F3458}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {918C7EB4-D7DE-48B2-8A36-065E6F144125}
+	EndGlobalSection
+EndGlobal
