@@ -32,7 +32,7 @@ namespace Z21lib
 
         public static bool Bit(this byte input, int bit)
         {
-            return (input & (2 ^ bit)) == (2 ^ bit);
+            return (input & (1 << bit)) == (1 << bit);
         }
 
         public static ArgumentOutOfRangeException GetException(string param, string message)

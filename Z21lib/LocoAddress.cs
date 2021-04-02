@@ -24,7 +24,7 @@ namespace Z21lib
 
         public LocoAddress(byte msb, byte lsb)
         {
-            Number = (msb & 0x3F) << 8 + lsb;
+            Number = ((msb & 0x3F) << 8) + lsb;
         }
 
         public LocoAddress(int number)
@@ -32,9 +32,9 @@ namespace Z21lib
             Number = number;
         }
 
-        public static LocoAddress FromByte(byte[] data)
+        public override string ToString()
         {
-            return new LocoAddress(data[0], data[1]);
+            return $"{Number} [{MSB}, {LSB}]";
         }
     }
 }

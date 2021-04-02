@@ -20,8 +20,10 @@ namespace TestClient
             {
                 string bytes = Console.ReadLine();
 
-                if (!bytes.StartsWith("LI:"))
+                if (!bytes.Contains(":"))
                     client.Send(bytes.ToByteArray());
+                else if (bytes.StartsWith("TI:"))
+                    client.GetTurnoutInfo(int.Parse(bytes.Replace("TI:", null)));
                 else
                     client.GetLocoInfo(int.Parse(bytes.Replace("LI:", null)));
             }

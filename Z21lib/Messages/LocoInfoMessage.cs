@@ -26,6 +26,17 @@ namespace Z21lib.Messages
 
         public bool[] Functions { get; set; }
 
+        public string Func 
+        {
+            get
+            {
+                string output = "";
+                foreach (bool f in Functions)
+                    output += f ? "1" : "0";
+                return output;
+            } 
+        }
+
         public LocoInfoMessage() : base(MessageType.LAN_X_LOCO_INFO)
         {
             Functions = new bool[29];
@@ -41,7 +52,7 @@ namespace Z21lib.Messages
             {
                 byte db2 = message[7];
                 lm.Busy = db2.Bit(3);
-                lm.SpeedSteps = (SpeedSteps)(db2 & 0x111);
+                lm.SpeedSteps = (SpeedSteps)(db2 & 0b111);
             }
             if (message.Length > 9)
             {
@@ -90,20 +101,21 @@ namespace Z21lib.Messages
 
         private static int ParseSpeed(SpeedSteps steps, byte speedData)
         {
-            if ((speedData & 0x0000) == 0x0000)
+            byte l = (byte)(speedData & 0b1111);
+            if (l == 0b0000)
                 return 0;
-            else if ((speedData & 0x0001) == 0x0001)
+            else if (l == 0b0001)
                 return -1;
             
             switch (steps)
             {
                 case SpeedSteps.DCC14:
-                    return (speedData & 0x1111) - 1;
+                    return (speedData & 0b1111) - 1;
                 case SpeedSteps.DCC28:
-                    int i = (speedData & 0x10000) == 0x10000 ? 1 : 0;
-                    return (speedData & 0x1111) - 1 + i;
+                    int i = (speedData & 0b10000) == 0b10000 ? 1 : 0;
+                    return (speedData & 0b1111) - 1 + i;
                 case SpeedSteps.DCC128:
-                    return (speedData & 0x1111111) - 1;
+                    return (speedData & 0b1111111) - 1;
                 default:
                     return 0;
             }
