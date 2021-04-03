@@ -147,6 +147,11 @@ namespace Z21lib
                         case 0xEF:
                             MessageReceived?.Invoke(LocoInfoMessage.Parse(message));
                             return;
+
+                        // LAN_X_EXT_ACCESSORY_INFO
+                        case 0x44:
+                            MessageReceived?.Invoke(new AccessoryInfoMessage(new AccesoryAddress(message[5], message[6]), message[7], (AccessoryStatus)message[8]));
+                            return;
                     }
                     return;
 
@@ -207,18 +212,19 @@ namespace Z21lib
             Send(request);
         }
 
-        public void GetTurnoutInfo(int address)
+        public void GetAccessoryInfo(int address)
         {
-            AccesoryAddress la = new AccesoryAddress(0, 1);
+            AccesoryAddress la = new AccesoryAddress(address);
             byte[] request = new byte[9];
-            request[0] = 0x08;
+            request[0] = 0x09;
             request[1] = 0x00;
             request[2] = 0x40;
             request[3] = 0x00;
-            request[4] = 0x43;
+            request[4] = 0x44;
             request[5] = la.MSB;
             request[6] = la.LSB;
-            request[7] = (byte)(request[4] ^ request[5] ^ request[6]);
+            request[7] = 0x00;
+            request[8] = (byte)(request[4] ^ request[5] ^ request[6] ^ request[7]);
 
             Send(request);
         }

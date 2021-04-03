@@ -34,7 +34,27 @@ namespace Z21lib
 
         public override string ToString()
         {
-            return $"{Number} [{MSB}, {LSB}]";
+            return $"L{Number} [{MSB}, {LSB}]";
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj.GetType() == typeof(LocoAddress) && (LocoAddress)obj == this;
+        }
+
+        public override int GetHashCode()
+        {
+            return Number.GetHashCode();
+        }
+
+        public static bool operator ==(LocoAddress left, LocoAddress right)
+        {
+            return left.Number == right.Number;
+        }
+
+        public static bool operator !=(LocoAddress left, LocoAddress right)
+        {
+            return left.Number != right.Number;
         }
     }
 }

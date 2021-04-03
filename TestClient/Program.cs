@@ -22,9 +22,9 @@ namespace TestClient
 
                 if (!bytes.Contains(":"))
                     client.Send(bytes.ToByteArray());
-                else if (bytes.StartsWith("TI:"))
-                    client.GetTurnoutInfo(int.Parse(bytes.Replace("TI:", null)));
-                else
+                else if (bytes.StartsWith("AI:"))
+                    client.GetAccessoryInfo(int.Parse(bytes.Replace("AI:", null)));
+                else if (bytes.StartsWith("LI:"))
                     client.GetLocoInfo(int.Parse(bytes.Replace("LI:", null)));
             }
         }

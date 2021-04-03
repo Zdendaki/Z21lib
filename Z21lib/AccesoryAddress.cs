@@ -8,13 +8,13 @@ namespace Z21lib
 {
     public struct AccesoryAddress
     {
-        public int FAdr { get; set; }
+        public int Address { get; set; }
 
         public byte MSB
         {
             get
             {
-                return (byte)(FAdr >> 8);
+                return (byte)(Address >> 8);
             }
         }
 
@@ -22,13 +22,43 @@ namespace Z21lib
         {
             get
             {
-                return (byte)(FAdr % 256);
+                return (byte)(Address % 256);
             }
         }
 
-        public AccesoryAddress(int dcc, int port)
+        public AccesoryAddress(int address)
         {
-            FAdr = 4 * dcc + port;
+            Address = address;
+        }
+
+        public AccesoryAddress(byte msb, byte lsb)
+        {
+            Address = (msb << 8) + lsb;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj.GetType() == typeof(AccesoryAddress) && (AccesoryAddress)obj == this;
+        }
+
+        public override int GetHashCode()
+        {
+            return Address.GetHashCode();
+        }
+
+        public override string ToString()
+        {
+            return $"A{Address} [{MSB}, {LSB}]";
+        }
+
+        public static bool operator ==(AccesoryAddress left, AccesoryAddress right)
+        {
+            return left.Address == right.Address;
+        }
+
+        public static bool operator !=(AccesoryAddress left, AccesoryAddress right)
+        {
+            return left.Address != right.Address;
         }
     }
 }

@@ -49,6 +49,7 @@
     <Compile Include="Endianity\LittleEndianReader.cs" />
     <Compile Include="LocoAddress.cs" />
     <Compile Include="Log.cs" />
+    <Compile Include="Messages\AccessoryInfoMessage.cs" />
     <Compile Include="Messages\BroadcastFlagsMessage.cs" />
     <Compile Include="Messages\CentralState.cs" />
     <Compile Include="Messages\DeviceCodeMessage.cs" />
