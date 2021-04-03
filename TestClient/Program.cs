@@ -18,15 +18,29 @@ namespace TestClient
             client.Connect();
             while (true)
             {
-                string bytes = Console.ReadLine();
-
-                if (!bytes.Contains(":"))
+                string bytes = Console.ReadLine().ToLower();
+                
+                if (bytes.EndsWith("xx"))
+                    client.Send(ComputeXOR(bytes.Replace("xx", null).ToByteArray()));
+                else if (bytes.StartsWith("ai:"))
+                    client.GetAccessoryInfo(int.Parse(bytes.Replace("ai:", null)));
+                else if (bytes.StartsWith("li:"))
+                    client.GetLocoInfo(int.Parse(bytes.Replace("li:", null)));
+                else
                     client.Send(bytes.ToByteArray());
-                else if (bytes.StartsWith("AI:"))
-                    client.GetAccessoryInfo(int.Parse(bytes.Replace("AI:", null)));
-                else if (bytes.StartsWith("LI:"))
-                    client.GetLocoInfo(int.Parse(bytes.Replace("LI:", null)));
             }
+        }
+
+        private static byte[] ComputeXOR(byte[] input)
+        {
+            byte xor = input[4];
+            byte[] output = new byte[input.Length + 1];
+            for (int i = 5; i < input.Length; i++)
+                xor = (byte)(xor ^ input[i]);
+
+            Array.Copy(input, output, input.Length);
+            output[input.Length] = xor;
+            return output;
         }
 
         private static void Client_MessageReceived(Message message)
