@@ -24,6 +24,8 @@ namespace TestClient
                     client.Send(ComputeXOR(bytes.Replace("xx", null).ToByteArray()));
                 else if (bytes.StartsWith("ai:"))
                     client.GetAccessoryInfo(int.Parse(bytes.Replace("ai:", null)));
+                else if (bytes.StartsWith("ei:"))
+                    client.GetExtendedAccessoryInfo(int.Parse(bytes.Replace("ei:", null)));
                 else if (bytes.StartsWith("li:"))
                     client.GetLocoInfo(int.Parse(bytes.Replace("li:", null)));
                 else

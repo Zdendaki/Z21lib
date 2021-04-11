@@ -200,6 +200,17 @@ namespace Z21lib
             }
         }
 
+        public void GetSerial()
+        {
+            byte[] request = new byte[4];
+            request[0] = 0x04;
+            request[1] = 0x00;
+            request[2] = 0x10;
+            request[3] = 0x00;
+
+            Send(request);
+        }
+
         public void GetLocoInfo(int address)
         {
             LocoAddress la = new LocoAddress(address);
@@ -233,7 +244,24 @@ namespace Z21lib
             Send(request);
         }
 
-        public void SetAccessory(int address, byte command)
+        public void GetExtendedAccessoryInfo(int address)
+        {
+            AccessoryAddress la = new AccessoryAddress(address);
+            byte[] request = new byte[9];
+            request[0] = 0x09;
+            request[1] = 0x00;
+            request[2] = 0x40;
+            request[3] = 0x00;
+            request[4] = 0x44;
+            request[5] = la.MSB;
+            request[6] = la.LSB;
+            request[7] = 0x00;
+            request[8] = (byte)(request[4] ^ request[5] ^ request[6] ^ request[7]);
+
+            Send(request);
+        }
+
+        public void SetExtendedAccessory(int address, byte command)
         {
             AccessoryAddress la = new AccessoryAddress(address);
             byte[] request = new byte[10];
@@ -247,6 +275,34 @@ namespace Z21lib
             request[7] = command;
             request[8] = 0x00;
             request[9] = (byte)(request[4] ^ request[5] ^ request[6] ^ request[7] ^ request[8]);
+
+            Send(request);
+        }
+
+        public void SetTrackPower(bool on)
+        {
+            byte[] request = new byte[7];
+            request[0] = 0x07;
+            request[1] = 0x00;
+            request[2] = 0x40;
+            request[3] = 0x00;
+            request[4] = 0x21;
+            request[5] = (byte)(on ? 0x81 : 0x80);
+            request[6] = (byte)(request[4] ^ request[5]);
+
+            Send(request);
+        }
+
+        public void GetTrackStatus()
+        {
+            byte[] request = new byte[7];
+            request[0] = 0x07;
+            request[1] = 0x00;
+            request[2] = 0x40;
+            request[3] = 0x00;
+            request[4] = 0x21;
+            request[5] = 0x24;
+            request[6] = 0x05;
 
             Send(request);
         }
