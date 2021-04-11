@@ -150,7 +150,12 @@ namespace Z21lib
 
                         // LAN_X_EXT_ACCESSORY_INFO
                         case 0x44:
-                            MessageReceived?.Invoke(new AccessoryInfoMessage(new AccesoryAddress(message[5], message[6]), message[7], (AccessoryStatus)message[8]));
+                            MessageReceived?.Invoke(new AccessoryInfoMessage(new AccessoryAddress(message[5], message[6]), message[7], (AccessoryStatus)message[8]));
+                            return;
+
+                        // LAN_X_TURNOUT_INFO
+                        case 0x43:
+                            MessageReceived?.Invoke(new TurnoutInfoMessage(new AccessoryAddress(message[5], message[6]), (TurnoutState)message[7]));
                             return;
                     }
                     break;
@@ -214,7 +219,7 @@ namespace Z21lib
 
         public void GetAccessoryInfo(int address)
         {
-            AccesoryAddress la = new AccesoryAddress(address);
+            AccessoryAddress la = new AccessoryAddress(address);
             byte[] request = new byte[8];
             request[0] = 0x08;
             request[1] = 0x00;
@@ -224,6 +229,24 @@ namespace Z21lib
             request[5] = la.MSB;
             request[6] = la.LSB;
             request[7] = (byte)(request[4] ^ request[5] ^ request[6]);
+
+            Send(request);
+        }
+
+        public void SetAccessory(int address, byte command)
+        {
+            AccessoryAddress la = new AccessoryAddress(address);
+            byte[] request = new byte[10];
+            request[0] = 0x0A;
+            request[1] = 0x00;
+            request[2] = 0x40;
+            request[3] = 0x00;
+            request[4] = 0x54;
+            request[5] = la.MSB;
+            request[6] = la.LSB;
+            request[7] = command;
+            request[8] = 0x00;
+            request[9] = (byte)(request[4] ^ request[5] ^ request[6] ^ request[7] ^ request[8]);
 
             Send(request);
         }

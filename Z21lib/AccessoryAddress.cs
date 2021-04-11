@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Z21lib
 {
-    public struct AccesoryAddress
+    public struct AccessoryAddress
     {
         public int Address { get; set; }
 
@@ -26,19 +26,19 @@ namespace Z21lib
             }
         }
 
-        public AccesoryAddress(int address)
+        public AccessoryAddress(int address)
         {
             Address = address;
         }
 
-        public AccesoryAddress(byte msb, byte lsb)
+        public AccessoryAddress(byte msb, byte lsb)
         {
             Address = (msb << 8) + lsb;
         }
 
         public override bool Equals(object obj)
         {
-            return obj.GetType() == typeof(AccesoryAddress) && (AccesoryAddress)obj == this;
+            return obj.GetType() == typeof(AccessoryAddress) && (AccessoryAddress)obj == this;
         }
 
         public override int GetHashCode()
@@ -51,12 +51,12 @@ namespace Z21lib
             return $"A{Address} [{MSB}, {LSB}]";
         }
 
-        public static bool operator ==(AccesoryAddress left, AccesoryAddress right)
+        public static bool operator ==(AccessoryAddress left, AccessoryAddress right)
         {
             return left.Address == right.Address;
         }
 
-        public static bool operator !=(AccesoryAddress left, AccesoryAddress right)
+        public static bool operator !=(AccessoryAddress left, AccessoryAddress right)
         {
             return left.Address != right.Address;
         }

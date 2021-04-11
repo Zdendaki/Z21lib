@@ -41,7 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AccesoryAddress.cs" />
+    <Compile Include="AccessoryAddress.cs" />
     <Compile Include="Endianity\BE.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Extensions.cs" />
@@ -62,6 +62,7 @@
     <Compile Include="Messages\SerialNumberMessage.cs" />
     <Compile Include="Messages\SystemStateMessage.cs" />
     <Compile Include="Messages\TrackStatusChangedMessage.cs" />
+    <Compile Include="Messages\TurnoutInfoMessage.cs" />
     <Compile Include="Messages\XBusVersionMessage.cs" />
     <Compile Include="MessageType.cs" />
     <Compile Include="Messages\Message.cs" />

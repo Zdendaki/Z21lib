@@ -8,13 +8,13 @@ namespace Z21lib.Messages
 {
     public class AccessoryInfoMessage : Message
     {
-        public AccesoryAddress Address { get; set; }
+        public AccessoryAddress Address { get; set; }
 
         public byte State { get; set; }
 
         public AccessoryStatus Status { get; set; }
 
-        public AccessoryInfoMessage(AccesoryAddress address, byte state, AccessoryStatus status) : base(MessageType.LAN_X_EXT_ACCESSORY_INFO)
+        public AccessoryInfoMessage(AccessoryAddress address, byte state, AccessoryStatus status) : base(MessageType.LAN_X_EXT_ACCESSORY_INFO)
         {
             Address = address;
             State = state;
