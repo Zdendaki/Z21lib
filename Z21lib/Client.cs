@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using Z21lib.Endianity;
 using Z21lib.Messages;
-using static Z21lib.Messages.HardwareTypeMessage;
 
 namespace Z21lib
 {
@@ -49,7 +45,7 @@ namespace Z21lib
             ParseData(buffer);
         }
 
-        public void ParseData(byte[] buffer)
+        private void ParseData(byte[] buffer)
         {
             if (buffer == null || buffer.Length < 4)
                 return;
@@ -200,6 +196,7 @@ namespace Z21lib
             }
         }
 
+        // LAN_GET_SERIAL_NUMBER
         public void GetSerial()
         {
             byte[] request = new byte[4];
@@ -211,6 +208,7 @@ namespace Z21lib
             Send(request);
         }
 
+        // LAN_X_GET_LOCO_INFO
         public void GetLocoInfo(int address)
         {
             LocoAddress la = new LocoAddress(address);
@@ -228,6 +226,7 @@ namespace Z21lib
             Send(request);
         }
 
+        // LAN_X_GET_TURNOUT_INFO
         public void GetAccessoryInfo(int address)
         {
             AccessoryAddress la = new AccessoryAddress(address);
@@ -244,6 +243,33 @@ namespace Z21lib
             Send(request);
         }
 
+        // LAN_X_SET_TURNOUT
+        public void SetAccessory(int address, bool output)
+        {
+            AccessoryAddress la = new AccessoryAddress(address);
+            byte[] request = new byte[9];
+            request[0] = 0x09;
+            request[1] = 0x00;
+            request[2] = 0x40;
+            request[3] = 0x00;
+            request[4] = 0x43;
+            request[5] = la.MSB;
+            request[6] = la.LSB;
+            request[7] = new BitArray(1, 0, 1, 0, 1, 0, 0, (byte)(output ? 1 : 0)).ToByte();
+            request[8] = (byte)(request[4] ^ request[5] ^ request[6] ^ request[7]);
+
+            Send(request);
+
+            Thread.Sleep(150);
+
+            var ba = new BitArray(request[7]);
+            ba.SetBit(0, 0);
+            request[7] = ba.ToByte();
+
+            Send(request);
+        }
+
+        // LAN_X_GET_EXT_ACCESSORY_INFO
         public void GetExtendedAccessoryInfo(int address)
         {
             AccessoryAddress la = new AccessoryAddress(address);
@@ -261,6 +287,7 @@ namespace Z21lib
             Send(request);
         }
 
+        // LAN_X_SET_EXT_ACCESSORY
         public void SetExtendedAccessory(int address, byte command)
         {
             AccessoryAddress la = new AccessoryAddress(address);
@@ -279,6 +306,7 @@ namespace Z21lib
             Send(request);
         }
 
+        // LAN_X_SET_TRACK_POWER_OFF/ON
         public void SetTrackPower(bool on)
         {
             byte[] request = new byte[7];
@@ -293,6 +321,7 @@ namespace Z21lib
             Send(request);
         }
 
+        // LAN_X_GET_STATUS
         public void GetTrackStatus()
         {
             byte[] request = new byte[7];
