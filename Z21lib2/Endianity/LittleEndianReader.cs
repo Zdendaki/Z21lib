@@ -66,7 +66,7 @@ namespace Z21lib.Endianity
 
         public void Dispose()
         {
-            buffer = null!;
+            buffer = null;
             position = 0;
         }
     }

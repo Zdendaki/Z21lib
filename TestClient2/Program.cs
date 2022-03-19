@@ -18,7 +18,7 @@ namespace TestClient
             client.Connect();
             while (true)
             {
-                string bytes = Console.ReadLine()!.ToLower();
+                string bytes = Console.ReadLine().ToLower();
 
                 if (bytes.EndsWith("xx"))
                     client.Send(ComputeXOR(bytes.Replace("xx", null).ToByteArray()));

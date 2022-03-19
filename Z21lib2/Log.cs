@@ -35,9 +35,9 @@ namespace Z21lib
         }
         
         static bool started = false;
-        static List<LogMessage> Data = null!;
+        static List<LogMessage> Data = null;
         static bool logToFile = false;
-        static string fileName = null!;
+        static string fileName = null;
         public static bool DebugLog = false;
 
         public static void Start()

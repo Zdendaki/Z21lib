@@ -36,9 +36,9 @@ namespace Z21lib
             Address = (msb << 8) + lsb + 1;
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals(object obj)
         {
-            return obj is not null && obj.GetType() == typeof(AccessoryAddress) && (AccessoryAddress)obj == this;
+            return obj.GetType() == typeof(AccessoryAddress) && (AccessoryAddress)obj == this;
         }
 
         public override int GetHashCode()

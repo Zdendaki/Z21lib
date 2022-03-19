@@ -37,9 +37,9 @@ namespace Z21lib
             return $"L{Number} [{MSB}, {LSB}]";
         }
 
-        public override bool Equals(object? obj)
+        public override bool Equals(object obj)
         {
-            return obj is not null && obj.GetType() == typeof(LocoAddress) && (LocoAddress)obj == this;
+            return obj.GetType() == typeof(LocoAddress) && (LocoAddress)obj == this;
         }
 
         public override int GetHashCode()

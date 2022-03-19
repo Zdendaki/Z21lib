@@ -10,7 +10,7 @@ namespace Z21lib
     public class Client : UdpClient
     {
         public delegate void MessageReceivedEventHandler(Message message);
-        public event MessageReceivedEventHandler MessageReceived = default!;
+        public event MessageReceivedEventHandler MessageReceived;
         
         private IPAddress IP;
         private int Port;
@@ -39,7 +39,7 @@ namespace Z21lib
 
         public void Callback(IAsyncResult result)
         {
-            IPEndPoint? sender = null!;
+            IPEndPoint sender = null;
             byte[] buffer = EndReceive(result, ref sender);
             BeginReceive(new AsyncCallback(Callback), null);
             ParseData(buffer);
