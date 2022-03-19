@@ -252,7 +252,7 @@ namespace Z21lib
             request[1] = 0x00;
             request[2] = 0x40;
             request[3] = 0x00;
-            request[4] = 0x43;
+            request[4] = 0x53;
             request[5] = la.MSB;
             request[6] = la.LSB;
             request[7] = new BitArray(1, 0, 1, 0, 1, 0, 0, (byte)(output ? 1 : 0)).ToByte();
@@ -260,10 +260,10 @@ namespace Z21lib
 
             Send(request);
 
-            Thread.Sleep(150);
+            Thread.Sleep(200);
 
             var ba = new BitArray(request[7]);
-            ba.SetBit(0, 0);
+            ba.SetBit(3, 0);
             request[7] = ba.ToByte();
 
             Send(request);

@@ -19,7 +19,7 @@ namespace TestClient
             while (true)
             {
                 string bytes = Console.ReadLine().ToLower();
-                
+
                 if (bytes.EndsWith("xx"))
                     client.Send(ComputeXOR(bytes.Replace("xx", null).ToByteArray()));
                 else if (bytes.StartsWith("ai:"))
@@ -28,6 +28,8 @@ namespace TestClient
                     client.GetExtendedAccessoryInfo(int.Parse(bytes.Replace("ei:", null)));
                 else if (bytes.StartsWith("li:"))
                     client.GetLocoInfo(int.Parse(bytes.Replace("li:", null)));
+                else if (bytes.StartsWith("ss:"))
+                    client.SetAccessory(int.Parse(bytes.Replace("ss:", null).Replace("+", null).Replace("-", null)), bytes.Last() == '+');
                 else
                     client.Send(bytes.ToByteArray());
             }

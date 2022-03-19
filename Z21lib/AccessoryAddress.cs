@@ -14,7 +14,7 @@ namespace Z21lib
         {
             get
             {
-                return (byte)(Address >> 8);
+                return (byte)((Address - 1) >> 8);
             }
         }
 
@@ -22,7 +22,7 @@ namespace Z21lib
         {
             get
             {
-                return (byte)(Address % 256);
+                return (byte)((Address - 1) % 256);
             }
         }
 
@@ -33,7 +33,7 @@ namespace Z21lib
 
         public AccessoryAddress(byte msb, byte lsb)
         {
-            Address = (msb << 8) + lsb;
+            Address = (msb << 8) + lsb + 1;
         }
 
         public override bool Equals(object obj)
