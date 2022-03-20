@@ -29,6 +29,7 @@ namespace Z21lib.Messages
         LocoNetSwitches = 0x04000000,
         LocoNetOccupancyDetector = 0x08000000,
         RailComChanges = 0x00040000,
-        CANBusChanges = 0x00080000
+        CANBusChanges = 0x00080000,
+        CANBusBooster = 0x00020000
     }
 }

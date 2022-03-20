@@ -26,6 +26,8 @@ namespace Z21lib.Messages
 
         public CentralStateEx CentralStateEx { get; set; }
 
+        public Capabilities Capabilities { get; set; }
+
         public SystemStateMessage(short mainCurrent, short progCurrent, short filteredMaincurrent, short temperature, ushort supplyVoltage, ushort vCCVoltage, CentralState centralState, CentralStateEx centralStateEx) : base(MessageType.LAN_SYSTEMSTATE_DATACHANGED)
         {
             MainCurrent = mainCurrent;
@@ -50,6 +52,7 @@ namespace Z21lib.Messages
                 VCCVoltage = lr.ReadUInt16();
                 CentralState = (CentralState)lr.ReadByte();
                 CentralStateEx = (CentralStateEx)lr.ReadByte();
+                Capabilities = (Capabilities)lr.ReadByte();
             }
         }
     }

@@ -161,6 +161,11 @@ namespace Z21lib
                     MessageReceived?.Invoke(new BroadcastFlagsMessage((BroadcastFlags)LE.ToUInt32(message, 4)));
                     return;
 
+                // LAN_RMBUS_DATACHANGED
+                case 0x80:
+                    MessageReceived?.Invoke(new RBusDataChangedMessage(message.SubArray(4, 11)));
+                    return;
+
                 // LAN_SYSTEMSTATE_DATACHANGED
                 case 0x84:
                     MessageReceived?.Invoke(new SystemStateMessage(message.SubArray(4, 16)));
@@ -332,6 +337,19 @@ namespace Z21lib
             request[4] = 0x21;
             request[5] = 0x24;
             request[6] = 0x05;
+
+            Send(request);
+        }
+
+        // LAN_RMBUS_GETDATA
+        public void GetRBusData(byte group)
+        {
+            byte[] request = new byte[5];
+            request[0] = 0x05;
+            request[1] = 0x00;
+            request[2] = 0x81;
+            request[3] = 0x00;
+            request[4] = group;
 
             Send(request);
         }
