@@ -31,5 +31,53 @@
         {
             return (ulong)((data[startIndex] << 56) | (data[startIndex + 1] << 48) | (data[startIndex + 2] << 40) | (data[startIndex + 3] << 32) | (data[startIndex + 4] << 24) | (data[startIndex + 5] << 16) | (data[startIndex + 6] << 8) | data[startIndex + 7]);
         }
+
+        public static byte[] Parse(short data)
+        {
+            byte[] binary = BitConverter.GetBytes(data);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(binary);
+            return binary;
+        }
+
+        public static byte[] Parse(ushort data)
+        {
+            byte[] binary = BitConverter.GetBytes(data);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(binary);
+            return binary;
+        }
+
+        public static byte[] Parse(int data)
+        {
+            byte[] binary = BitConverter.GetBytes(data);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(binary);
+            return binary;
+        }
+
+        public static byte[] Parse(uint data)
+        {
+            byte[] binary = BitConverter.GetBytes(data);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(binary);
+            return binary;
+        }
+
+        public static byte[] Parse(long data)
+        {
+            byte[] binary = BitConverter.GetBytes(data);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(binary);
+            return binary;
+        }
+
+        public static byte[] Parse(ulong data)
+        {
+            byte[] binary = BitConverter.GetBytes(data);
+            if (BitConverter.IsLittleEndian)
+                Array.Reverse(binary);
+            return binary;
+        }
     }
 }

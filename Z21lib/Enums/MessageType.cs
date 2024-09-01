@@ -1,4 +1,4 @@
-﻿namespace Z21lib
+﻿namespace Z21lib.Enums
 {
     public enum MessageType
     {
@@ -69,6 +69,10 @@
         LAN_DECODER_GET_DESCRIPTION,
         LAN_DECODER_SYSTEMSTATE_GETDATA,
         LAN_DECODER_SYSTEMSTATE_DATACHANGED,
-        NOT_IMPLEMENTED
+        LAN_CAN_DEVICE_GET_DESCRIPTION,
+        LAN_CAN_DEVICE_SET_DESCRIPTION,
+        LAN_CAN_BOOSTER_SYSTEMSTATE_CHGD,
+        LAN_CAN_BOOSTER_SET_TRACKPOWER,
+        NOT_IMPLEMENTED = int.MaxValue
     }
 }

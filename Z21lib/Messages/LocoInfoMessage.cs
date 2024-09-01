@@ -1,4 +1,6 @@
-﻿namespace Z21lib.Messages
+﻿using Z21lib.Enums;
+
+namespace Z21lib.Messages
 {
     public class LocoInfoMessage : Message
     {
@@ -114,13 +116,6 @@
                     return 0;
             }
         }
-    }
-
-    public enum SpeedSteps : byte
-    {
-        DCC14 = 0x0,
-        DCC28 = 0x2,
-        DCC128 = 0x4
     }
 
     public enum Direction

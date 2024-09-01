@@ -1,12 +1,14 @@
-﻿namespace Z21lib.Messages
+﻿using Z21lib.Enums;
+
+namespace Z21lib.Messages
 {
     public class TurnoutInfoMessage : Message
     {
-        public AccessoryAddress Address { get; set; }
+        public Address Address { get; set; }
 
         public TurnoutState State { get; set; }
 
-        public TurnoutInfoMessage(AccessoryAddress address, TurnoutState state) : base(MessageType.LAN_X_TURNOUT_INFO)
+        public TurnoutInfoMessage(Address address, TurnoutState state) : base(MessageType.LAN_X_TURNOUT_INFO)
         {
             Address = address;
             State = state;

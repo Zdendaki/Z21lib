@@ -1,4 +1,5 @@
 ﻿using Z21lib;
+using Z21lib.Enums;
 using Z21lib.Messages;
 
 namespace TestClient
@@ -7,7 +8,7 @@ namespace TestClient
     {
         static void Main(string[] args)
         {
-            Client client = new Client(new Z21Info("192.168.0.111", 21105));
+            Z21Client client = new Z21Client(new Z21Info("192.168.0.111", 21105));
             client.MessageReceived += Client_MessageReceived;
 
             client.Connect();
@@ -18,13 +19,13 @@ namespace TestClient
                 if (bytes.EndsWith("xx"))
                     client.Send(ComputeXOR(bytes.Replace("xx", null).ToByteArray()));
                 else if (bytes.StartsWith("ai:"))
-                    client.GetAccessoryInfo(int.Parse(bytes.Replace("ai:", null)));
+                    client.LanXGetTurnoutInfo(new(ushort.Parse(bytes.Replace("ai:", null))));
                 else if (bytes.StartsWith("ei:"))
-                    client.GetExtendedAccessoryInfo(int.Parse(bytes.Replace("ei:", null)));
+                    client.LanXGetExtAccessoryInfo(new(ushort.Parse(bytes.Replace("ei:", null))));
                 else if (bytes.StartsWith("li:"))
-                    client.GetLocoInfo(int.Parse(bytes.Replace("li:", null)));
+                    client.LanXGetLocoInfo(new(ushort.Parse(bytes.Replace("li:", null))));
                 else if (bytes.StartsWith("ss:"))
-                    client.SetAccessory(int.Parse(bytes.Replace("ss:", null).Replace("+", null).Replace("-", null)), bytes.Last() == '+');
+                    client.LanXSetTurnout(new(ushort.Parse(bytes.Replace("ss:", null).Replace("+", null).Replace("-", null))), bytes.Last() == '+', false, true);
                 else
                     client.Send(bytes.ToByteArray());
             }

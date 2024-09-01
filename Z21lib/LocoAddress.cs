@@ -6,50 +6,36 @@
         {
             get
             {
-                byte val = (byte)(Number >> 8);
-                if (val >= 128)
-                    val |= 0xC0;
-                return val;
+                int num = (Address & 0x3F00) >> 8;
+                if (LSB >= 128)
+                    num |= 0xC0;
+                return (byte)num;
             }
         }
 
-        public byte LSB { get => (byte)(Number % 256); }
+        public byte LSB => (byte)(Address & 0xFF);
 
-        public int Number { get; set; }
+        public ushort Address { get; }
 
         public LocoAddress(byte msb, byte lsb)
         {
-            Number = ((msb & 0x3F) << 8) + lsb;
+            Address = (ushort)(((msb & 0x3F) << 8) + lsb);
+
+            if (Address > 10239)
+                throw new ArgumentOutOfRangeException(nameof(msb), "Maximum allowed address is 10239.");
         }
 
-        public LocoAddress(int number)
+        public LocoAddress(ushort number)
         {
-            Number = number;
+            if (number > 10239)
+                throw new ArgumentOutOfRangeException(nameof(number), "Maximum allowed address is 10239.");
+
+            Address = number;
         }
 
         public override string ToString()
         {
-            return $"L{Number} [{MSB}, {LSB}]";
-        }
-
-        public override bool Equals(object? obj)
-        {
-            return obj is not null && obj.GetType() == typeof(LocoAddress) && (LocoAddress)obj == this;
-        }
-
-        public override int GetHashCode()
-        {
-            return Number.GetHashCode();
-        }
-
-        public static bool operator ==(LocoAddress left, LocoAddress right)
-        {
-            return left.Number == right.Number;
-        }
-
-        public static bool operator !=(LocoAddress left, LocoAddress right)
-        {
-            return left.Number != right.Number;
+            return $"L{Address} [{MSB}, {LSB}]";
         }
     }
 }

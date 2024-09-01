@@ -31,7 +31,7 @@
 
         public static ArgumentOutOfRangeException GetException(string param, string message)
         {
-            return new ArgumentOutOfRangeException(param, new Exception(message));
+            return new ArgumentOutOfRangeException(param, message);
         }
     }
 }

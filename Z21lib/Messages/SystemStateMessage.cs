@@ -1,4 +1,5 @@
 ﻿using Z21lib.Endianity;
+using Z21lib.Enums;
 
 namespace Z21lib.Messages
 {

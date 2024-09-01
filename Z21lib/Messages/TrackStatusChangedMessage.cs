@@ -1,4 +1,6 @@
-﻿namespace Z21lib.Messages
+﻿using Z21lib.Enums;
+
+namespace Z21lib.Messages
 {
     public class TrackStatusChangedMessage : Message
     {
@@ -9,6 +11,4 @@
             Status = status;
         }
     }
-
-
 }
