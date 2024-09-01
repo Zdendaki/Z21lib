@@ -1,4 +1,7 @@
-﻿namespace TestClient
+﻿using Z21lib;
+using Z21lib.Messages;
+
+namespace TestClient
 {
     class Program
     {

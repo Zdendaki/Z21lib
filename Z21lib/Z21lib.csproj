@@ -1,12 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Authors>Zdeněk Kundrát</Authors>
     <Company>Zdendaki.net</Company>
     <Product>Z21 library</Product>
+	<AssemblyVersion>1.0.0.0</AssemblyVersion>
+	<Title>Z21 library</Title>
+	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+	<Platforms>AnyCPU;x64;x86;ARM32;ARM64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
