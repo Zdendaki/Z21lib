@@ -1,7 +1,5 @@
-﻿using System;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
-using System.Threading;
 using Z21lib.Endianity;
 using Z21lib.Messages;
 
@@ -11,11 +9,11 @@ namespace Z21lib
     {
         public delegate void MessageReceivedEventHandler(Message message);
         public event MessageReceivedEventHandler MessageReceived = default!;
-        
+
         private IPAddress IP;
         private int Port;
-        
-        public Client(Z21Info info) : base (info.Port)
+
+        public Client(Z21Info info) : base(info.Port)
         {
             IP = IPAddress.Parse(info.IP);
             Port = info.Port;

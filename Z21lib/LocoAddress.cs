@@ -1,21 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Z21lib
+﻿namespace Z21lib
 {
     public struct LocoAddress
     {
-        public byte MSB { 
-            get 
+        public byte MSB
+        {
+            get
             {
                 byte val = (byte)(Number >> 8);
                 if (val >= 128)
                     val |= 0xC0;
                 return val;
-            } 
+            }
         }
 
         public byte LSB { get => (byte)(Number % 256); }

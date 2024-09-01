@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Diagnostics;
 
 namespace Z21lib
 {
@@ -33,7 +27,7 @@ namespace Z21lib
                 return $"{Date:dd.MM.yyyy HH:mm:ss} | {Message}";
             }
         }
-        
+
         static bool started = false;
         static List<LogMessage> Data = null!;
         static bool logToFile = false;

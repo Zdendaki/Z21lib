@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Z21lib.Messages
+﻿namespace Z21lib.Messages
 {
     public class TrackStatusChangedMessage : Message
     {
@@ -16,5 +10,5 @@ namespace Z21lib.Messages
         }
     }
 
-    
+
 }

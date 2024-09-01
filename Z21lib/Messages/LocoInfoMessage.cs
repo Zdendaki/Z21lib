@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Z21lib.Messages
+﻿namespace Z21lib.Messages
 {
     public class LocoInfoMessage : Message
     {
@@ -26,7 +20,7 @@ namespace Z21lib.Messages
 
         public bool[] Functions { get; set; }
 
-        public string Func 
+        public string Func
         {
             get
             {
@@ -34,7 +28,7 @@ namespace Z21lib.Messages
                 foreach (bool f in Functions)
                     output += f ? "1" : "0";
                 return output;
-            } 
+            }
         }
 
         public LocoInfoMessage() : base(MessageType.LAN_X_LOCO_INFO)
@@ -106,7 +100,7 @@ namespace Z21lib.Messages
                 return 0;
             else if (l == 0b0001)
                 return -1;
-            
+
             switch (steps)
             {
                 case SpeedSteps.DCC14:

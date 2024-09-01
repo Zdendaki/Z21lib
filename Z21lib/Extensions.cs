@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Z21lib
+﻿namespace Z21lib
 {
     static class Extensions
     {
@@ -17,7 +11,7 @@ namespace Z21lib
 
         public static bool FlagPresent<T>(this uint input, T flag) where T : Enum
         {
-            return (input & (uint)(object)flag) != 0; 
+            return (input & (uint)(object)flag) != 0;
         }
 
         public static bool FlagPresent<T>(this int input, T flag) where T : Enum

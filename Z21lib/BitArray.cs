@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Z21lib
+﻿namespace Z21lib
 {
     public class BitArray
     {

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Z21lib.Endianity
+﻿namespace Z21lib.Endianity
 {
     class LittleEndianReader : IDisposable
     {
@@ -35,7 +33,7 @@ namespace Z21lib.Endianity
 
         public uint ReadUInt32()
         {
-            uint output = LE.ToUInt32(buffer, position); 
+            uint output = LE.ToUInt32(buffer, position);
             position += 4;
             return output;
         }

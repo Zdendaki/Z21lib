@@ -1,15 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Z21lib.Messages
+﻿namespace Z21lib.Messages
 {
     public class RBusDataChangedMessage : Message
     {
         List<TrackData> Tracks { get; set; }
-        
+
         public RBusDataChangedMessage(byte[] data) : base(MessageType.LAN_RMBUS_DATACHANGED)
         {
             int group = data[0] == 1 ? 10 : 0;

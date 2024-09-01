@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Z21lib;
-using Z21lib.Messages;
-
-namespace TestClient
+﻿namespace TestClient
 {
     class Program
     {
