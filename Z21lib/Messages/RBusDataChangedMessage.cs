@@ -4,7 +4,7 @@ namespace Z21lib.Messages
 {
     public class RBusDataChangedMessage : Message
     {
-        List<TrackData> Tracks { get; set; }
+        public List<TrackData> Tracks { get; init; }
 
         public RBusDataChangedMessage(byte[] data) : base(MessageType.LAN_RMBUS_DATACHANGED)
         {
@@ -28,13 +28,13 @@ namespace Z21lib.Messages
         }
     }
 
-    public struct TrackData
+    public readonly struct TrackData
     {
-        public int Module { get; set; }
+        public int Module { get; init; }
 
-        public int Input { get; set; }
+        public int Input { get; init; }
 
-        public bool Occupied { get; set; }
+        public bool Occupied { get; init; }
 
         public TrackData(int module, int input, bool occupied)
         {

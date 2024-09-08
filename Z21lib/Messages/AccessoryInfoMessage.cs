@@ -4,11 +4,11 @@ namespace Z21lib.Messages
 {
     public class AccessoryInfoMessage : Message
     {
-        public Address Address { get; set; }
+        public Address Address { get; init; }
 
-        public byte State { get; set; }
+        public byte State { get; init; }
 
-        public AccessoryStatus Status { get; set; }
+        public AccessoryStatus Status { get; init; }
 
         public AccessoryInfoMessage(Address address, byte state, AccessoryStatus status) : base(MessageType.LAN_X_EXT_ACCESSORY_INFO)
         {
@@ -16,11 +16,10 @@ namespace Z21lib.Messages
             State = state;
             Status = status;
         }
-    }
 
-    public enum AccessoryStatus : byte
-    {
-        DataValid = 0x00,
-        DataUnknown = 0xFF
+        public static AccessoryInfoMessage Parse(byte[] message)
+        {
+            return new AccessoryInfoMessage(new Address(message[5], message[6]), message[7], (AccessoryStatus)message[8]);
+        }
     }
 }

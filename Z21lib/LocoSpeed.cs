@@ -50,5 +50,32 @@ namespace Z21lib
                 return (byte)(output + Speed + 1);
             }
         }
+
+        public static LocoSpeed Parse(SpeedSteps steps, LocoDirection direction, byte speed)
+        {
+            speed = (byte)(speed & 0x7F); // 0111_1111
+            bool emergencyStop;
+            if (steps == SpeedSteps.DCC28)
+                emergencyStop = (speed & 0xF) == 1;
+            else
+                emergencyStop = speed == 1;
+
+            byte parseSpeed()
+            {
+                if (speed == 0)
+                    return 0;
+
+                if (steps != SpeedSteps.DCC28)
+                    return (byte)(speed - 1);
+
+                if ((speed & 0xF) == 0) // 1111
+                    return 0;
+
+                byte even = (byte)((speed & 0b10000) >> 4);
+                return (byte)(((speed & 0b1111) << 1) - 3 + even);
+            }
+
+            return new LocoSpeed(steps, direction, parseSpeed(), emergencyStop);
+        }
     }
 }

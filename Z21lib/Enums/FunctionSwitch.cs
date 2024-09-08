@@ -1,4 +1,4 @@
-﻿namespace Z21lib
+﻿namespace Z21lib.Enums
 {
     public enum FunctionSwitch
     {

@@ -5,16 +5,34 @@ namespace Z21lib.Messages
 {
     public class SystemStateMessage : Message
     {
+        /// <summary>
+        /// Main current [mA]
+        /// </summary>
         public short MainCurrent { get; set; }
 
+        /// <summary>
+        /// Programming track current [mA]
+        /// </summary>
         public short ProgCurrent { get; set; }
 
+        /// <summary>
+        /// Smoothed current on main track [mA]
+        /// </summary>
         public short FilteredMaincurrent { get; set; }
 
+        /// <summary>
+        /// Command station internal temprerature [°C]
+        /// </summary>
         public short Temperature { get; set; }
 
+        /// <summary>
+        /// Supply voltage [mV]
+        /// </summary>
         public ushort SupplyVoltage { get; set; }
 
+        /// <summary>
+        /// Internal voltage, identical to track voltage [mV]
+        /// </summary>
         public ushort VCCVoltage { get; set; }
 
         public CentralState CentralState { get; set; }
@@ -35,9 +53,9 @@ namespace Z21lib.Messages
             CentralStateEx = centralStateEx;
         }
 
-        public SystemStateMessage(byte[] data) : base(MessageType.LAN_SYSTEMSTATE_DATACHANGED)
+        internal SystemStateMessage(byte[] data) : base(MessageType.LAN_SYSTEMSTATE_DATACHANGED)
         {
-            using (LittleEndianReader lr = new LittleEndianReader(data))
+            using (LittleEndianReader lr = new(data))
             {
                 MainCurrent = lr.ReadInt16();
                 ProgCurrent = lr.ReadInt16();

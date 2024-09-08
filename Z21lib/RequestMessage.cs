@@ -40,14 +40,13 @@ namespace Z21lib
             return message;
         }
 
-        public static byte[] CreateXBUS(byte[] data)
+        public static byte[] CreateXOR(ushort header, byte[] data)
         {
             ushort length = (ushort)(data.Length + 5);
 
             byte[] message = new byte[length];
-            message[2] = 0x40;
-            message[3] = 0x00;
             Array.Copy(LE.Parse(length), message, 2);
+            Array.Copy(LE.Parse(header), 0, message, 2, 2);
             Array.Copy(data, 0, message, 4, data.Length);
             byte xor = 0;
             for (int i = 0; i < data.Length; i++)
@@ -56,6 +55,11 @@ namespace Z21lib
             }
             message[message.Length - 1] = xor;
             return message;
+        }
+
+        public static byte[] CreateXBUS(byte[] data)
+        {
+            return CreateXOR(0x40, data);
         }
 
         public static byte[] CreateLocoNet(ushort header, byte[] data)

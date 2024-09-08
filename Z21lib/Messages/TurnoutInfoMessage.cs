@@ -4,22 +4,19 @@ namespace Z21lib.Messages
 {
     public class TurnoutInfoMessage : Message
     {
-        public Address Address { get; set; }
+        public Address Address { get; init; }
 
-        public TurnoutState State { get; set; }
+        public TurnoutState State { get; init; }
 
         public TurnoutInfoMessage(Address address, TurnoutState state) : base(MessageType.LAN_X_TURNOUT_INFO)
         {
             Address = address;
             State = state;
         }
-    }
 
-    public enum TurnoutState : byte
-    {
-        NotSwitched = 0x0,
-        SwitchedStraight = 0x1,
-        SwitchedReverse = 0x2,
-        Invalid = 0x3
+        internal static TurnoutInfoMessage Parse(byte[] message)
+        {
+            return new(new Address(message[5], message[6]), (TurnoutState)message[7]);
+        }
     }
 }

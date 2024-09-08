@@ -1,4 +1,4 @@
-﻿namespace Z21lib
+﻿namespace Z21lib.Structs
 {
     public struct Z21Info
     {

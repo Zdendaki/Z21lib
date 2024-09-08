@@ -1,4 +1,6 @@
-﻿namespace Z21lib
+﻿using System.Runtime.CompilerServices;
+
+namespace Z21lib
 {
     static class Extensions
     {
@@ -19,9 +21,9 @@
             return (input & (int)(object)flag) != 0;
         }
 
-        public static int FromBCD(this byte input)
+        public static byte FromBCD(this byte input)
         {
-            return 10 * (input / 16) + (input % 16);
+            return (byte)(10 * (input / 16) + (input % 16));
         }
 
         public static bool Bit(this byte input, int bit)
@@ -32,6 +34,18 @@
         public static ArgumentOutOfRangeException GetException(string param, string message)
         {
             return new ArgumentOutOfRangeException(param, message);
+        }
+
+        public static unsafe byte[] SerializeValueType<T>(in T value) where T : unmanaged
+        {
+            byte[] result = new byte[sizeof(T)];
+            Unsafe.As<byte, T>(ref result[0]) = value;
+            return result;
+        }
+
+        public static unsafe T DeserializeValueType<T>(byte[] data) where T : unmanaged
+        {
+            return Unsafe.As<byte, T>(ref data[0]);
         }
     }
 }

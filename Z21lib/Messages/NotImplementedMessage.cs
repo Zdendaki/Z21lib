@@ -4,13 +4,13 @@ namespace Z21lib.Messages
 {
     public class NotImplementedMessage : Message
     {
-        byte[] binary;
+        public byte[] Binary { get; init; }
 
-        public string Data { get => BitConverter.ToString(binary).ToUpper().Replace('-', ' '); }
+        public string Data => BitConverter.ToString(Binary).ToUpperInvariant().Replace('-', ' ');
 
         public NotImplementedMessage(byte[] data) : base(MessageType.NOT_IMPLEMENTED)
         {
-            binary = data;
+            Binary = data;
         }
     }
 }

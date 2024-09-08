@@ -11,6 +11,7 @@
 	<Title>Z21 library</Title>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<Platforms>AnyCPU;x64;x86;ARM32;ARM64</Platforms>
+	<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
 </Project>

@@ -13,5 +13,10 @@ namespace Z21lib.Messages
             Version = version / 10f;
             Station = station;
         }
+
+        internal static XBusVersionMessage Parse(byte[] message)
+        {
+            return new XBusVersionMessage(message[6].FromBCD(), message[7]);
+        }
     }
 }

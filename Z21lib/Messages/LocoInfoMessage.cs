@@ -4,23 +4,21 @@ namespace Z21lib.Messages
 {
     public class LocoInfoMessage : Message
     {
-        public LocoAddress Address { get; set; }
+        public LocoAddress Address { get; init; }
 
-        public bool Busy { get; set; }
+        public DecoderMode Mode { get; init; }
 
-        public SpeedSteps SpeedSteps { get; set; }
+        public bool Busy { get; init; }
 
-        public Direction Direction { get; set; }
+        public LocoSpeed Speed { get; init; }
 
-        public int Speed { get; set; }
+        public bool DoubleTraction { get; init; }
 
-        public bool DoubleTraction { get; set; }
+        public bool SmartSearch { get; init; }
 
-        public bool SmartSearch { get; set; }
+        public bool Light { get; init; }
 
-        public bool Light { get; set; }
-
-        public bool[] Functions { get; set; }
+        public bool[] Functions { get; init; }
 
         public string Func
         {
@@ -38,30 +36,37 @@ namespace Z21lib.Messages
             Functions = new bool[29];
         }
 
-        public static LocoInfoMessage Parse(byte[] message)
+        internal static LocoInfoMessage Parse(byte[] message)
         {
-            LocoInfoMessage lm = new LocoInfoMessage();
-            lm.Address = new LocoAddress(message[5], message[6]);
+            bool busy = false;
+            DecoderMode mode = DecoderMode.DCC;
+            SpeedSteps steps = SpeedSteps.DCC14;
+            LocoDirection direction = LocoDirection.Forward;
+            byte speed = 0;
+            bool doubleTraction = false;
+            bool smartSearch = false;
+            bool light = false;
             bool[] functions = new bool[29];
 
             if (message.Length > 8)
             {
                 byte db2 = message[7];
-                lm.Busy = db2.Bit(3);
-                lm.SpeedSteps = (SpeedSteps)(db2 & 0b111);
+                mode = db2.Bit(4) ? DecoderMode.Motorola : DecoderMode.DCC;
+                busy = db2.Bit(3);
+                steps = (SpeedSteps)(db2 & 0b111);
             }
             if (message.Length > 9)
             {
                 byte db3 = message[8];
-                lm.Direction = db3.Bit(7) ? Direction.Forward : Direction.Backward;
-                lm.Speed = ParseSpeed(lm.SpeedSteps, db3);
+                direction = db3.Bit(7) ? LocoDirection.Forward : LocoDirection.Backward;
+                speed = (byte)(db3 & 0x7F);
             }
             if (message.Length > 10)
             {
                 byte db4 = message[9];
-                lm.DoubleTraction = db4.Bit(6);
-                lm.SmartSearch = db4.Bit(5);
-                lm.Light = functions[0] = db4.Bit(4);
+                doubleTraction = db4.Bit(6);
+                smartSearch = db4.Bit(5);
+                light = functions[0] = db4.Bit(4);
                 functions[4] = db4.Bit(3);
                 functions[3] = db4.Bit(2);
                 functions[2] = db4.Bit(1);
@@ -79,8 +84,34 @@ namespace Z21lib.Messages
             {
                 FillFunctions(message[12], ref functions, 21);
             }
+            if (message.Length > 14)
+            {
+                FillFunctions(message[13], ref functions, 29);
+            }
+
+            LocoInfoMessage lm = new()
+            {
+                Address = new LocoAddress(message[5], message[6]),
+                Mode = mode,
+                Busy = busy,
+                Speed = LocoSpeed.Parse(steps, direction, speed),
+                DoubleTraction = doubleTraction,
+                SmartSearch = smartSearch,
+                Light = light,
+                Functions = functions
+            };
 
             return lm;
+        }
+
+        private static int FunctionsLength(int messageSize)
+        {
+            if (messageSize < 11)
+                return 0;
+            if (messageSize == 11)
+                return 4;
+            else
+                return 4 + (messageSize - 11) * 8;
         }
 
         private static void FillFunctions(byte data, ref bool[] functions, int start)

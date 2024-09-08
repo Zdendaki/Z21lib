@@ -4,14 +4,19 @@ namespace Z21lib.Messages
 {
     public class FirmwareVersionMessage : Message
     {
-        public int Major { get; set; }
+        public byte Major { get; init; }
 
-        public int Minor { get; set; }
+        public byte Minor { get; init; }
 
-        public FirmwareVersionMessage(int major, int minor) : base(MessageType.LAN_X_GET_FIRMWARE_VERSION)
+        public FirmwareVersionMessage(byte major, byte minor) : base(MessageType.LAN_X_GET_FIRMWARE_VERSION)
         {
             Major = major;
             Minor = minor;
+        }
+
+        internal static FirmwareVersionMessage Parse(byte[] message)
+        {
+            return new FirmwareVersionMessage(message[6].FromBCD(), message[7].FromBCD());
         }
     }
 }
