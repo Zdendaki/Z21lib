@@ -1,6 +1,7 @@
 ﻿using Z21lib;
 using Z21lib.Enums;
 using Z21lib.Messages;
+using Z21lib.Structs;
 
 namespace TestClient
 {

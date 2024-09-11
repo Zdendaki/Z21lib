@@ -1,4 +1,6 @@
-﻿namespace Z21lib.Messages
+﻿using Z21lib.Enums;
+
+namespace Z21lib.Messages
 {
     public class CVResultMessage : Message
     {
@@ -6,7 +8,7 @@
 
         public byte Value { get; init; }
 
-        public CVResultMessage(byte msb, byte lsb, byte value) : base(Enums.MessageType.LAN_X_CV_RESULT)
+        public CVResultMessage(byte msb, byte lsb, byte value) : base(MessageType.LAN_X_CV_RESULT)
         {
             Address = new(msb, lsb);
             Value = value;

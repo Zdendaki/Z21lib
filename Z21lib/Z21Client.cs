@@ -10,7 +10,7 @@ namespace Z21lib
     /// <summary>
     /// Z21 Client (Firmware V1.42)
     /// <br /><br />
-    /// <seealso href="https://www.z21.eu/media/Kwc_Basic_DownloadTag_Component/root-en-main_47-1652-959-downloadTag-download/default/d559b9cf/1699290380/z21-lan-protokoll-en.pdf"/>
+    /// <seealso href="https://www.z21.eu/media/Kwc_Basic_DownloadTag_Component/root-en-main_47-1652-959-downloadTag-download/default/d559b9cf/1699290380/z21-lan-protokoll-en.pdf">Z21 API Documentation</seealso>
     /// </summary>
     public class Z21Client : UdpClient
     {
@@ -121,6 +121,71 @@ namespace Z21lib
                 case 0x70:
                     MessageReceived?.Invoke(TurnoutModeMessage.Parse(message));
                     return;
+
+                // 7.1 LAN_RMBUS_DATACHANGED
+                case 0x80:
+                    MessageReceived?.Invoke(new RBusDataChangedMessage(message.SubArray(4, 11)));
+                    return;
+
+                // 8.1 LAN_RAILCOM_DATACHANGED
+                case 0x88:
+                    MessageReceived?.Invoke(RailComDataMessage.Parse(message));
+                    return;
+
+                // 9.1 LAN_LOCONET_Z21_RX
+                case 0xA0:
+                    MessageReceived?.Invoke(new LoconetMessage(MessageType.LAN_LOCONET_Z21_RX, message));
+                    return;
+
+                // 9.2 LAN_LOCONET_Z21_TX
+                case 0xA1:
+                    MessageReceived?.Invoke(new LoconetMessage(MessageType.LAN_LOCONET_Z21_TX, message));
+                    return;
+
+                // 9.3 LAN_LOCONET_FROM_LAN
+                case 0xA2:
+                    MessageReceived?.Invoke(new LoconetMessage(MessageType.LAN_LOCONET_FROM_LAN, message));
+                    return;
+
+                // 9.4 LAN_LOCONET_DISPATCH_ADDR
+                case 0xA3:
+                    MessageReceived?.Invoke(LoconetDispatchMessage.Parse(message));
+                    return;
+
+                // 9.5 LAN_LOCONET_DETECTOR
+                case 0xA4:
+                    MessageReceived?.Invoke(LoconetDetectorMessage.Parse(message));
+                    return;
+
+                // 10.1 LAN_CAN_DETECTOR
+                case 0xC4:
+                    MessageReceived?.Invoke(CanDetectorMessage.Parse(message));
+                    return;
+
+                // 10.2.1 LAN_CAN_DEVICE_GET_DESCRIPTION
+                case 0xC8:
+                    MessageReceived?.Invoke(CanBoosterDescriptionMessage.Parse(message));
+                    return;
+
+                // 10.2.3 LAN_CAN_BOOSTER_SYSTEMSTATE_CHGD
+                case 0xCA:
+                    MessageReceived?.Invoke(CanBoosterSystemstateMessage.Parse(message));
+                    return;
+
+                // 11.1.1.1 LAN_ZLINK_GET_HWINFO
+                case 0xE8:
+                    MessageReceived?.Invoke(ZlinkHwInfoMessage.Parse(message));
+                    return;
+
+                // 11.2.1 LAN_BOOSTER_GET_DESCRIPTION
+                case 0xB8:
+                    MessageReceived?.Invoke(LanBoosterDescriptionMessage.Parse(message));
+                    return;
+
+                // 11.2.4 LAN_BOOSTER_SYSTEMSTATE_DATACHANGED
+                case 0xBA:
+                    MessageReceived?.Invoke(LanBoosterSystemStateMessage.Parse(message));
+                    return;
             }
 
             void parseXbus()
@@ -206,31 +271,6 @@ namespace Z21lib
                     // 6.5 LAN_X_CV_RESULT
                     case 0x64:
                         MessageReceived?.Invoke(CVResultMessage.Parse(message));
-                        return;
-
-                    // 7.1 LAN_RMBUS_DATACHANGED
-                    case 0x80:
-                        MessageReceived?.Invoke(new RBusDataChangedMessage(message.SubArray(4, 11)));
-                        return;
-
-                    // 8.1 LAN_RAILCOM_DATACHANGED
-                    case 0x88:
-                        MessageReceived?.Invoke(RailComDataMessage.Parse(message));
-                        return;
-
-                    // 9.1 LAN_LOCONET_Z21_RX
-                    case 0xA0:
-                        MessageReceived?.Invoke(new LoconetMessage(MessageType.LAN_LOCONET_Z21_RX, message));
-                        return;
-
-                    // 9.2 LAN_LOCONET_Z21_TX
-                    case 0xA1:
-                        MessageReceived?.Invoke(new LoconetMessage(MessageType.LAN_LOCONET_Z21_TX, message));
-                        return;
-
-                    // 9.3 LAN_LOCONET_FROM_LAN
-                    case 0xA2:
-                        MessageReceived?.Invoke(new LoconetMessage(MessageType.LAN_LOCONET_FROM_LAN, message));
                         return;
                 }
             }
