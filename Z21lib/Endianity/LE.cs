@@ -1,82 +1,78 @@
-﻿namespace Z21lib.Endianity
+﻿using System.Buffers.Binary;
+
+namespace Z21lib.Endianity
 {
     static class LE
     {
         public static short ToInt16(byte[] data, int startIndex)
         {
-            return (short)(data[startIndex] | (data[startIndex + 1] << 8));
+            return BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(startIndex, sizeof(short)));
         }
 
         public static ushort ToUInt16(byte[] data, int startIndex)
         {
-            return (ushort)(data[startIndex] | (data[startIndex + 1] << 8));
+            return BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(startIndex, sizeof(short)));
         }
 
         public static int ToInt32(byte[] data, int startIndex)
         {
-            return data[startIndex] | (data[startIndex + 1] << 8) | (data[startIndex + 2] << 16) | (data[startIndex + 3] << 24);
+            return BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(startIndex, sizeof(short)));
         }
 
         public static uint ToUInt32(byte[] data, int startIndex)
         {
-            return (uint)(data[startIndex] | (data[startIndex + 1] << 8) | (data[startIndex + 2] << 16) | (data[startIndex + 3] << 24));
+            return BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(startIndex, sizeof(short)));
         }
 
         public static long ToInt64(byte[] data, int startIndex)
         {
-            return data[startIndex] | (data[startIndex + 1] << 8) | (data[startIndex + 2] << 16) | (data[startIndex + 3] << 24) | (data[startIndex + 4] << 32) | (data[startIndex + 5] << 40) | (data[startIndex + 6] << 48) | (data[startIndex + 7] << 56);
+            return BinaryPrimitives.ReadInt64LittleEndian(data.AsSpan(startIndex, sizeof(short)));
         }
 
         public static ulong ToUInt64(byte[] data, int startIndex)
         {
-            return (ulong)(data[startIndex] | (data[startIndex + 1] << 8) | (data[startIndex + 2] << 16) | (data[startIndex + 3] << 24) | (data[startIndex + 4] << 32) | (data[startIndex + 5] << 40) | (data[startIndex + 6] << 48) | (data[startIndex + 7] << 56));
+            return BinaryPrimitives.ReadUInt64LittleEndian(data.AsSpan(startIndex, sizeof(short)));
         }
 
         public static byte[] Parse(short data)
         {
-            byte[] binary = BitConverter.GetBytes(data);
-            if (!BitConverter.IsLittleEndian)
-                Array.Reverse(binary);
+            byte[] binary = new byte[sizeof(short)];
+            BinaryPrimitives.WriteInt16LittleEndian(binary, data);
             return binary;
         }
 
         public static byte[] Parse(ushort data)
         {
-            byte[] binary = BitConverter.GetBytes(data);
-            if (!BitConverter.IsLittleEndian)
-                Array.Reverse(binary);
+            byte[] binary = new byte[sizeof(ushort)];
+            BinaryPrimitives.WriteUInt16LittleEndian(binary, data);
             return binary;
         }
 
         public static byte[] Parse(int data)
         {
-            byte[] binary = BitConverter.GetBytes(data);
-            if (!BitConverter.IsLittleEndian)
-                Array.Reverse(binary);
+            byte[] binary = new byte[sizeof(int)];
+            BinaryPrimitives.WriteInt32LittleEndian(binary, data);
             return binary;
         }
 
         public static byte[] Parse(uint data)
         {
-            byte[] binary = BitConverter.GetBytes(data);
-            if (!BitConverter.IsLittleEndian)
-                Array.Reverse(binary);
+            byte[] binary = new byte[sizeof(uint)];
+            BinaryPrimitives.WriteUInt32LittleEndian(binary, data);
             return binary;
         }
 
         public static byte[] Parse(long data)
         {
-            byte[] binary = BitConverter.GetBytes(data);
-            if (!BitConverter.IsLittleEndian)
-                Array.Reverse(binary);
+            byte[] binary = new byte[sizeof(long)];
+            BinaryPrimitives.WriteInt64LittleEndian(binary, data);
             return binary;
         }
 
         public static byte[] Parse(ulong data)
         {
-            byte[] binary = BitConverter.GetBytes(data);
-            if (!BitConverter.IsLittleEndian)
-                Array.Reverse(binary);
+            byte[] binary = new byte[sizeof(ulong)];
+            BinaryPrimitives.WriteUInt64LittleEndian(binary, data);
             return binary;
         }
     }
