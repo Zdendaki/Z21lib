@@ -11,27 +11,27 @@ namespace Z21lib.Endianity
 
         public static ushort ToUInt16(byte[] data, int startIndex)
         {
-            return BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(startIndex, sizeof(short)));
+            return BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(startIndex, sizeof(ushort)));
         }
 
         public static int ToInt32(byte[] data, int startIndex)
         {
-            return BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(startIndex, sizeof(short)));
+            return BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(startIndex, sizeof(int)));
         }
 
         public static uint ToUInt32(byte[] data, int startIndex)
         {
-            return BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(startIndex, sizeof(short)));
+            return BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(startIndex, sizeof(uint)));
         }
 
         public static long ToInt64(byte[] data, int startIndex)
         {
-            return BinaryPrimitives.ReadInt64LittleEndian(data.AsSpan(startIndex, sizeof(short)));
+            return BinaryPrimitives.ReadInt64LittleEndian(data.AsSpan(startIndex, sizeof(long)));
         }
 
         public static ulong ToUInt64(byte[] data, int startIndex)
         {
-            return BinaryPrimitives.ReadUInt64LittleEndian(data.AsSpan(startIndex, sizeof(short)));
+            return BinaryPrimitives.ReadUInt64LittleEndian(data.AsSpan(startIndex, sizeof(ulong)));
         }
 
         public static byte[] Parse(short data)
