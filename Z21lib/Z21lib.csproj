@@ -12,6 +12,7 @@
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<Platforms>AnyCPU;x64;x86;ARM32;ARM64</Platforms>
 	<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+	<Version>1.0.1</Version>
   </PropertyGroup>
 
 </Project>
