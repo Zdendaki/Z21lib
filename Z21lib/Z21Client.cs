@@ -63,7 +63,7 @@ namespace Z21lib
             {
                 int length = GetMessageLength(buffer);
 
-                if (length < 4)
+                if (length < 4 || position + length > buffer.Length)
                     break;
 
                 ParseMessage(buffer.SubArray(position, length));
