@@ -12,7 +12,7 @@ namespace Z21lib
     /// <br /><br />
     /// <seealso href="https://www.z21.eu/media/Kwc_Basic_DownloadTag_Component/root-en-main_47-1652-959-downloadTag-download/default/d559b9cf/1699290380/z21-lan-protokoll-en.pdf">Z21 API Documentation</seealso>
     /// </summary>
-    public class Z21Client : UdpClient
+    public class Z21Client : UdpClient, IDisposable
     {
         public delegate void MessageReceivedEventHandler(Message message);
         public event MessageReceivedEventHandler MessageReceived = default!;
@@ -20,6 +20,8 @@ namespace Z21lib
         private IPAddress IP;
         private int Port;
         bool _connected = false;
+
+        MemoryStream _sendBuffer = new(1024);
 
         public Z21Client(Z21Info info) : base(info.Port)
         {
@@ -34,6 +36,7 @@ namespace Z21lib
             EnableBroadcast = true;
             _connected = true;
             BeginReceive(new AsyncCallback(Callback), null);
+            SendingLoop();
             
             LanGetSerialNumber();
         }
@@ -41,6 +44,24 @@ namespace Z21lib
         public void Disconnect()
         {
             _connected = false;
+        }
+
+        private void SendingLoop()
+        {
+            while (_connected)
+            {
+                byte[] buffer;
+                lock (_sendBuffer)
+                {
+                    buffer = _sendBuffer.ToArray();
+                    _sendBuffer.SetLength(0);
+                }
+
+                if (buffer.Length > 0)
+                    Send(buffer, buffer.Length);
+
+                Thread.Sleep(50);
+            }
         }
 
         private void Callback(IAsyncResult result)
@@ -284,9 +305,18 @@ namespace Z21lib
         /// Sends buffer to Z21 command station
         /// </summary>
         /// <param name="data">Data buffer</param>
-        public void Send(byte[] data)
+        public bool Send(byte[] data)
         {
-            Send(data, data.Length);
+            if (!_connected || _sendBuffer.Position + data.Length > _sendBuffer.Capacity)
+                return false;
+
+            lock (_sendBuffer)
+            {
+                _sendBuffer.Write(data, 0, data.Length);
+            }
+
+            return true;
+            //Send(data, data.Length);
         }
 
         /// <summary>
@@ -983,6 +1013,13 @@ namespace Z21lib
         private static int GetDayOfWeek(DayOfWeek day)
         {
             return (((int)day + 6) % 7) << 5;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            _sendBuffer.Dispose();
+
+            base.Dispose(disposing);
         }
     }
 }
