@@ -22,11 +22,16 @@ namespace Z21lib
         bool _connected = false;
 
         MemoryStream _sendBuffer = new(1024);
+        Thread _loopThread;
 
         public Z21Client(Z21Info info) : base(info.Port)
         {
             IP = IPAddress.Parse(info.IP);
             Port = info.Port;
+            _loopThread = new(SendingLoop)
+            {
+                IsBackground = true
+            };
         }
 
         public void Connect()
@@ -36,7 +41,7 @@ namespace Z21lib
             EnableBroadcast = true;
             _connected = true;
             BeginReceive(new AsyncCallback(Callback), null);
-            Task.Run(SendingLoop);
+            _loopThread.Start();
             
             LanGetSerialNumber();
         }
@@ -44,6 +49,7 @@ namespace Z21lib
         public void Disconnect()
         {
             _connected = false;
+            _loopThread.Join();
         }
 
         private void SendingLoop()
@@ -60,7 +66,7 @@ namespace Z21lib
                 if (buffer.Length > 0)
                     Send(buffer, buffer.Length);
 
-                Thread.Sleep(50);
+                Thread.Sleep(20);
             }
         }
 
@@ -316,31 +322,30 @@ namespace Z21lib
             }
 
             return true;
-            //Send(data, data.Length);
         }
 
         /// <summary>
         /// 2.1 LAN_GET_SERIAL_NUMBER
         /// </summary>
-        public void LanGetSerialNumber()
+        public bool LanGetSerialNumber()
         {
-            Send([0x04, 0x00, 0x10, 0x00]);
+            return Send([0x04, 0x00, 0x10, 0x00]);
         }
 
         /// <summary>
         /// 2.2 LAN_LOGOFF
         /// </summary>
-        public void LanLogoff()
+        public bool LanLogoff()
         {
-            Send([0x04, 0x00, 0x30, 0x00]);
+            return Send([0x04, 0x00, 0x30, 0x00]);
         }
 
         /// <summary>
         /// 2.3 LAN_X_GET_VERSION
         /// </summary>
-        public void LanXGetVersion()
+        public bool LanXGetVersion()
         {
-            Send([0x07, 0x00, 0x40, 0x00, 0x21, 0x21, 0x00]);
+            return Send([0x07, 0x00, 0x40, 0x00, 0x21, 0x21, 0x00]);
         }
 
         /// <summary>
@@ -348,75 +353,75 @@ namespace Z21lib
         /// +
         /// 2.6 LAN_X_SET_TRACK_POWER_ON 
         /// </summary>
-        public void LanXSetTrackPower(bool power)
+        public bool LanXSetTrackPower(bool power)
         {
-            Send(RequestMessage.CreateXBUS([0x21, (byte)(power ? 0x81 : 0x80)]));
+            return Send(RequestMessage.CreateXBUS([0x21, (byte)(power ? 0x81 : 0x80)]));
         }
 
         /// <summary>
         /// 2.13 LAN_X_SET_STOP
         /// </summary>
-        public void LanXSetStop()
+        public bool LanXSetStop()
         {
-            Send([0x06, 0x00, 0x40, 0x00, 0x80, 0x80]);
+            return Send([0x06, 0x00, 0x40, 0x00, 0x80, 0x80]);
         }
 
         /// <summary>
         /// 2.15 LAN_X_GET_FIRMWARE_VERSION 
         /// </summary>
-        public void LanXGetFirmwareVersion()
+        public bool LanXGetFirmwareVersion()
         {
-            Send([0x07, 0x00, 0x40, 0x00, 0xF1, 0x0A, 0xFB]);
+            return Send([0x07, 0x00, 0x40, 0x00, 0xF1, 0x0A, 0xFB]);
         }
 
         /// <summary>
         /// 2.16 LAN_SET_BROADCASTFLAGS
         /// </summary>
         /// <param name="flags">Required broadcast messages</param>
-        public void LanSetBroadcastflags(BroadcastFlags flags)
+        public bool LanSetBroadcastflags(BroadcastFlags flags)
         {
-            Send(RequestMessage.Create(0x50, LE.Parse((uint)flags)));
+            return Send(RequestMessage.Create(0x50, LE.Parse((uint)flags)));
         }
 
         /// <summary>
         /// 2.17 LAN_GET_BROADCASTFLAGS
         /// </summary>
-        public void LanGetBroadcastflags()
+        public bool LanGetBroadcastflags()
         {
-            Send([0x04, 0x00, 0x51, 0x00]);
+            return Send([0x04, 0x00, 0x51, 0x00]);
         }
 
         /// <summary>
         /// 2.19 LAN_SYSTEMSTATE_GETDATA
         /// </summary>
-        public void LanSystemstateGetdata()
+        public bool LanSystemstateGetdata()
         {
-            Send([0x04, 0x00, 0x85, 0x00]);
+            return Send([0x04, 0x00, 0x85, 0x00]);
         }
 
         /// <summary>
         /// 2.20 LAN_GET_HWINFO
         /// </summary>
-        public void LanGetHwinfo()
+        public bool LanGetHwinfo()
         {
-            Send([0x04, 0x00, 0x1A, 0x00]);
+            return Send([0x04, 0x00, 0x1A, 0x00]);
         }
 
         /// <summary>
         /// 2.21 LAN_GET_CODE
         /// </summary>
-        public void LanGetCode()
+        public bool LanGetCode()
         {
-            Send([0x04, 0x00, 0x18, 0x00]);
+            return Send([0x04, 0x00, 0x18, 0x00]);
         }
 
         /// <summary>
         /// 3.1 LAN_GET_LOCOMODE
         /// </summary>
         /// <param name="address">Locomotive address (big endian)</param>
-        public void LanGetLocomode(LocoAddress address)
+        public bool LanGetLocomode(LocoAddress address)
         {
-            Send(RequestMessage.Create(0x60, BE.Parse(address.Address)));
+            return Send(RequestMessage.Create(0x60, BE.Parse(address.Address)));
         }
 
         /// <summary>
@@ -424,18 +429,18 @@ namespace Z21lib
         /// </summary>
         /// <param name="address">Locomotive address (big endian)</param>
         /// <param name="mode">Locomotive mode </param>
-        public void LanSetLocomode(LocoAddress address, DecoderMode mode)
+        public bool LanSetLocomode(LocoAddress address, DecoderMode mode)
         {
-            Send(RequestMessage.CreateMode(0x61, BE.Parse(address.Address), (byte)mode));
+            return Send(RequestMessage.CreateMode(0x61, BE.Parse(address.Address), (byte)mode));
         }
 
         /// <summary>
         /// 3.3 LAN_GET_TURNOUTMODE
         /// </summary>
         /// <param name="address">Accessory address</param>
-        public void LanGetTurnoutmode(Address address)
+        public bool LanGetTurnoutmode(Address address)
         {
-            Send(RequestMessage.Create(0x70, [address.MSB, address.LSB]));
+            return Send(RequestMessage.Create(0x70, [address.MSB, address.LSB]));
         }
 
         /// <summary>
@@ -443,18 +448,18 @@ namespace Z21lib
         /// </summary>
         /// <param name="address">Accessory address</param>
         /// <param name="mode">Accessory mode</param>
-        public void LanSetTurnoutmode(Address address, DecoderMode mode)
+        public bool LanSetTurnoutmode(Address address, DecoderMode mode)
         {
-            Send(RequestMessage.CreateMode(0x71, [address.MSB, address.LSB], (byte)mode));
+            return Send(RequestMessage.CreateMode(0x71, [address.MSB, address.LSB], (byte)mode));
         }
 
         /// <summary>
         /// 4.1 LAN_X_GET_LOCO_INFO
         /// </summary>
         /// <param name="address">Locomotive address</param>
-        public void LanXGetLocoInfo(LocoAddress address)
+        public bool LanXGetLocoInfo(LocoAddress address)
         {
-            Send(RequestMessage.CreateXBUS([0xE3, 0xF0, address.MSB, address.LSB]));
+            return Send(RequestMessage.CreateXBUS([0xE3, 0xF0, address.MSB, address.LSB]));
         }
 
         /// <summary>
@@ -462,9 +467,9 @@ namespace Z21lib
         /// </summary>
         /// <param name="address">Locomotive address</param>
         /// <param name="speed">Speed</param>
-        public void LanXSetLocoDrive(LocoAddress address, LocoSpeed speed)
+        public bool LanXSetLocoDrive(LocoAddress address, LocoSpeed speed)
         {
-            Send(RequestMessage.CreateXBUS([0xE4, (byte)(0x10 + speed.SpeedSteps), address.MSB, address.LSB, speed.GetByte()]));
+            return Send(RequestMessage.CreateXBUS([0xE4, (byte)(0x10 + speed.SpeedSteps), address.MSB, address.LSB, speed.GetByte()]));
         }
 
         /// <summary>
@@ -473,12 +478,12 @@ namespace Z21lib
         /// <param name="address">Locomotive address</param>
         /// <param name="state">Function state</param>
         /// <param name="function">Function address (0-31)</param>
-        public void LanXSetLocoFunction(LocoAddress address, FunctionSwitch state, byte function)
+        public bool LanXSetLocoFunction(LocoAddress address, FunctionSwitch state, byte function)
         {
             if (function > 31)
                 throw Extensions.GetException(nameof(function), "Function must be between 0 and 31!");
 
-            Send(RequestMessage.CreateXBUS([0xE4, 0xF8, address.MSB, address.LSB, (byte)(((byte)state << 6) + function)]));
+            return Send(RequestMessage.CreateXBUS([0xE4, 0xF8, address.MSB, address.LSB, (byte)(((byte)state << 6) + function)]));
         }
 
         /// <summary>
@@ -487,9 +492,9 @@ namespace Z21lib
         /// <param name="address">Locomotive address</param>
         /// <param name="group">Group code (see protocol specification)</param>
         /// <param name="functions">Group data (see protocol specification)</param>
-        public void LanXSetLocoFunctionGroup(LocoAddress address, byte group, byte functions)
+        public bool LanXSetLocoFunctionGroup(LocoAddress address, byte group, byte functions)
         {
-            Send(RequestMessage.CreateXBUS([0xE4, group, address.MSB, address.LSB, functions]));
+            return Send(RequestMessage.CreateXBUS([0xE4, group, address.MSB, address.LSB, functions]));
         }
 
         /// <summary>
@@ -499,37 +504,37 @@ namespace Z21lib
         /// <param name="on">Binary state is ON</param>
         /// <param name="low">Data low byte</param>
         /// <param name="high">Data high byte</param>
-        public void LanXSetLocoBinaryState(LocoAddress address, bool on, byte low, byte high)
+        public bool LanXSetLocoBinaryState(LocoAddress address, bool on, byte low, byte high)
         {
             low = (byte)(low & 0x7F | (on ? 0x80 : 0x00));
-            Send(RequestMessage.CreateXBUS([0xE5, 0x5F, address.MSB, address.LSB, low, high]));
+            return Send(RequestMessage.CreateXBUS([0xE5, 0x5F, address.MSB, address.LSB, low, high]));
         }
 
         /// <summary>
         /// 4.5 LAN_X_SET_LOCO_E_STOP
         /// </summary>
         /// <param name="address">Locomotive address</param>
-        public void LanXSetLocoEStop(LocoAddress address)
+        public bool LanXSetLocoEStop(LocoAddress address)
         {
-            Send(RequestMessage.CreateXBUS([0x92, address.MSB, address.LSB]));
+            return Send(RequestMessage.CreateXBUS([0x92, address.MSB, address.LSB]));
         }
 
         /// <summary>
         /// 4.6 LAN_X_PURGE_LOCO
         /// </summary>
         /// <param name="address">Locomotive address</param>
-        public void LanXPurgeLoco(LocoAddress address)
+        public bool LanXPurgeLoco(LocoAddress address)
         {
-            Send(RequestMessage.CreateXBUS([0xE3, 0x44, address.MSB, address.LSB]));
+            return Send(RequestMessage.CreateXBUS([0xE3, 0x44, address.MSB, address.LSB]));
         }
 
         /// <summary>
         /// 5.1 LAN_X_GET_TURNOUT_INFO
         /// </summary>
         /// <param name="address">Function address</param>
-        public void LanXGetTurnoutInfo(Address address)
+        public bool LanXGetTurnoutInfo(Address address)
         {
-            Send(RequestMessage.CreateXBUS([0x43, address.MSB, address.LSB]));
+            return Send(RequestMessage.CreateXBUS([0x43, address.MSB, address.LSB]));
         }
 
         /// <summary>
@@ -539,7 +544,7 @@ namespace Z21lib
         /// <param name="activate"><see langword="true"/>: activate output | <see langword="false"/>: deactivate output</param>
         /// <param name="output"><see langword="true"/>: select output 2 | <see langword="false"/>: select output 1</param>
         /// <param name="useQueue">Use queue (see protocol specification)</param>
-        public void LanXSetTurnout(Address address, bool activate, bool output, bool useQueue)
+        public bool LanXSetTurnout(Address address, bool activate, bool output, bool useQueue)
         {
             byte data = 0b1000_0000;
             if (activate)
@@ -548,7 +553,7 @@ namespace Z21lib
                 data |= 0b0000_0001;
             if (useQueue)
                 data |= 0b0010_0000;
-            Send(RequestMessage.CreateXBUS([0x53, address.MSB, address.LSB, data]));
+            return Send(RequestMessage.CreateXBUS([0x53, address.MSB, address.LSB, data]));
         }
 
         /// <summary>
@@ -556,27 +561,27 @@ namespace Z21lib
         /// </summary>
         /// <param name="address">Function address</param>
         /// <param name="data">Extended accessory data (see accessory documentation)</param>
-        public void LanXSetExtAccessory(Address address, byte data)
+        public bool LanXSetExtAccessory(Address address, byte data)
         {
-            Send(RequestMessage.CreateXBUS([0x54, address.MSB, address.LSB, data, 0x00]));
+            return Send(RequestMessage.CreateXBUS([0x54, address.MSB, address.LSB, data, 0x00]));
         }
 
         /// <summary>
         /// 5.6 LAN_X_GET_EXT_ACCESSORY_INFO
         /// </summary>
         /// <param name="address">Function address</param>
-        public void LanXGetExtAccessoryInfo(Address address)
+        public bool LanXGetExtAccessoryInfo(Address address)
         {
-            Send(RequestMessage.CreateXBUS([0x44, address.MSB, address.LSB, 0x00]));
+            return Send(RequestMessage.CreateXBUS([0x44, address.MSB, address.LSB, 0x00]));
         }
 
         /// <summary>
         /// 6.1 LAN_X_CV_READ 
         /// </summary>
         /// <param name="address">CV address</param>
-        public void LanXCVRead(Address address)
+        public bool LanXCVRead(Address address)
         {
-            Send(RequestMessage.CreateXBUS([0x23, 0x11, address.MSB, address.LSB]));
+            return Send(RequestMessage.CreateXBUS([0x23, 0x11, address.MSB, address.LSB]));
         }
 
         /// <summary>
@@ -584,9 +589,9 @@ namespace Z21lib
         /// </summary>
         /// <param name="address">CV address</param>
         /// <param name="value">CV value</param>
-        public void LanXCVWrite(Address address, byte value)
+        public bool LanXCVWrite(Address address, byte value)
         {
-            Send(RequestMessage.CreateXBUS([0x24, 0x12, address.MSB, address.LSB, value]));
+            return Send(RequestMessage.CreateXBUS([0x24, 0x12, address.MSB, address.LSB, value]));
         }
 
         /// <summary>
@@ -595,13 +600,13 @@ namespace Z21lib
         /// <param name="addressL">Locomotive address</param>
         /// <param name="addressC">CV address</param>
         /// <param name="value">CV value</param>
-        public void LanXCVPOMWriteByte(LocoAddress addressL, Address addressC, byte value)
+        public bool LanXCVPOMWriteByte(LocoAddress addressL, Address addressC, byte value)
         {
             if (addressC.Value > 0x3FF)
                 throw Extensions.GetException(nameof(addressC), "CV address must be between 0 and 1023!");
 
             byte db3 = (byte)(0xEC + (addressC.MSB & 3));
-            Send(RequestMessage.CreateXBUS([0xE6, 0x30, addressL.MSB, addressL.LSB, db3, addressC.LSB, value]));
+            return Send(RequestMessage.CreateXBUS([0xE6, 0x30, addressL.MSB, addressL.LSB, db3, addressC.LSB, value]));
         }
 
         /// <summary>
@@ -611,7 +616,7 @@ namespace Z21lib
         /// <param name="addressC">CV address</param>
         /// <param name="position">Bit position</param>
         /// <param name="value">Bit value</param>
-        public void LanXCVPOMWriteBit(LocoAddress addressL, Address addressC, byte position, bool value)
+        public bool LanXCVPOMWriteBit(LocoAddress addressL, Address addressC, byte position, bool value)
         {
             if (addressC.Value > 0x3FF)
                 throw Extensions.GetException(nameof(addressC), "CV address must be between 0 and 1023!");
@@ -620,7 +625,7 @@ namespace Z21lib
 
             byte db3 = (byte)(0xE8 + (addressC.MSB & 3));
             byte db5 = (byte)(position + (value ? 8 : 0));
-            Send(RequestMessage.CreateXBUS([0xE6, 0x30, addressL.MSB, addressL.LSB, db3, addressC.LSB, db5]));
+            return Send(RequestMessage.CreateXBUS([0xE6, 0x30, addressL.MSB, addressL.LSB, db3, addressC.LSB, db5]));
         }
 
         /// <summary>
@@ -628,13 +633,13 @@ namespace Z21lib
         /// </summary>
         /// <param name="addressL">Locomotive address</param>
         /// <param name="addressC">CV address</param>
-        public void LanXCVPOMReadByte(LocoAddress addressL, Address addressC)
+        public bool LanXCVPOMReadByte(LocoAddress addressL, Address addressC)
         {
             if (addressC.Value > 0x3FF)
                 throw Extensions.GetException(nameof(addressC), "CV address must be between 0 and 1023!");
 
             byte db3 = (byte)(0xE4 + (addressC.MSB & 3));
-            Send(RequestMessage.CreateXBUS([0xE6, 0x30, addressL.MSB, addressL.LSB, db3, addressC.LSB, 0]));
+            return Send(RequestMessage.CreateXBUS([0xE6, 0x30, addressL.MSB, addressL.LSB, db3, addressC.LSB, 0]));
         }
 
         /// <summary>
@@ -644,7 +649,7 @@ namespace Z21lib
         /// <param name="addressC">CV address</param>
         /// <param name="output">Decoder output (0 = all)</param>
         /// <param name="value">Byte value</param>
-        public void LanXCVPomAccessoryWriteByte(Address addressF, Address addressC, byte output, byte value)
+        public bool LanXCVPomAccessoryWriteByte(Address addressF, Address addressC, byte output, byte value)
         {
             if (addressF.Value > 0x1FF)
                 throw Extensions.GetException(nameof(addressC), "Accessory address must be between 0 and 511!");
@@ -659,7 +664,7 @@ namespace Z21lib
             byte db1 = (byte)((addressF.Value & 0x1F0) >> 4);
             byte db2 = (byte)(((addressF.Value & 0xF) << 4) | output);
             byte db3 = (byte)(0xEC + (addressC.MSB & 3));
-            Send(RequestMessage.CreateXBUS([0xE6, 0x31, db1, db2, db3, addressC.LSB, value]));
+            return Send(RequestMessage.CreateXBUS([0xE6, 0x31, db1, db2, db3, addressC.LSB, value]));
         }
 
         /// <summary>
@@ -670,7 +675,7 @@ namespace Z21lib
         /// <param name="output">Decoder output (0 = all)</param>
         /// <param name="position">Bit position</param>
         /// <param name="value">Bit value</param>
-        public void LanXCVPomAccessoryWriteBit(Address addressF, Address addressC, byte output, byte position, bool value)
+        public bool LanXCVPomAccessoryWriteBit(Address addressF, Address addressC, byte output, byte position, bool value)
         {
             if (addressF.Value > 0x1FF)
                 throw Extensions.GetException(nameof(addressC), "Accessory address must be between 0 and 511!");
@@ -688,7 +693,7 @@ namespace Z21lib
             byte db2 = (byte)(((addressF.Value & 0xF) << 4) | output);
             byte db3 = (byte)(0xE8 + (addressC.MSB & 3));
             byte db5 = (byte)(position + (value ? 8 : 0));
-            Send(RequestMessage.CreateXBUS([0xE6, 0x31, db1, db2, db3, addressC.LSB, db5]));
+            return Send(RequestMessage.CreateXBUS([0xE6, 0x31, db1, db2, db3, addressC.LSB, db5]));
         }
 
         /// <summary>
@@ -697,7 +702,7 @@ namespace Z21lib
         /// <param name="addressF">Accessory address</param>
         /// <param name="addressC">CV address</param>
         /// <param name="output">Decoder output (0 = all)</param>
-        public void LanXCVPOMAccessoryReadByte(Address addressF, Address addressC, byte output)
+        public bool LanXCVPOMAccessoryReadByte(Address addressF, Address addressC, byte output)
         {
             if (addressF.Value > 0x1FF)
                 throw Extensions.GetException(nameof(addressC), "Accessory address must be between 0 and 511!");
@@ -712,7 +717,7 @@ namespace Z21lib
             byte db1 = (byte)((addressF.Value & 0x1F0) >> 4);
             byte db2 = (byte)(((addressF.Value & 0xF) << 4) | output);
             byte db3 = (byte)(0xE4 + (addressC.MSB & 3));
-            Send(RequestMessage.CreateXBUS([0xE6, 0x31, db1, db2, db3, addressC.LSB, 0]));
+            return Send(RequestMessage.CreateXBUS([0xE6, 0x31, db1, db2, db3, addressC.LSB, 0]));
         }
 
         /// <summary>
@@ -720,18 +725,18 @@ namespace Z21lib
         /// </summary>
         /// <param name="regAdr">Register address (0=Register1, 1=Register2, ...)</param>
         /// <param name="value">Register value</param>
-        public void LanXMMWriteByte(byte regAdr, byte value)
+        public bool LanXMMWriteByte(byte regAdr, byte value)
         {
-            Send(RequestMessage.CreateXBUS([0x24, 0xFF, 0, regAdr, value]));
+            return Send(RequestMessage.CreateXBUS([0x24, 0xFF, 0, regAdr, value]));
         }
 
         /// <summary>
         /// 6.13 LAN_X_DCC_READ_REGISTER
         /// </summary>
         /// <param name="register">Register (0x01=Register1, 0x02=Register2, ...)</param>
-        public void LanXDCCReadRegister(byte register)
+        public bool LanXDCCReadRegister(byte register)
         {
-            Send(RequestMessage.CreateXBUS([0x22, 0x11, register]));
+            return Send(RequestMessage.CreateXBUS([0x22, 0x11, register]));
         }
 
         /// <summary>
@@ -739,27 +744,27 @@ namespace Z21lib
         /// </summary>
         /// <param name="register">Register (0x01=Register1, 0x02=Register2, ...)</param>
         /// <param name="value">Register value</param>
-        public void LanXDCCWriteRegister(byte register, byte value)
+        public bool LanXDCCWriteRegister(byte register, byte value)
         {
-            Send(RequestMessage.CreateXBUS([0x23, 0x12, register, value]));
+            return Send(RequestMessage.CreateXBUS([0x23, 0x12, register, value]));
         }
 
         /// <summary>
         /// 7.2 LAN_RMBUS_GETDATA
         /// </summary>
         /// <param name="group">Group index</param>
-        public void LanRmbusGetdata(byte group)
+        public bool LanRmbusGetdata(byte group)
         {
-            Send([0x05, 0x00, 0x81, 0x00, group]);
+            return Send([0x05, 0x00, 0x81, 0x00, group]);
         }
 
         /// <summary>
         /// 7.3 LAN_RMBUS_PROGRAMMODULE
         /// </summary>
         /// <param name="address">R-BUS address</param>
-        public void LanRmbusProgrammodule(byte address)
+        public bool LanRmbusProgrammodule(byte address)
         {
-            Send([0x05, 0x00, 0x82, 0x00, address]);
+            return Send([0x05, 0x00, 0x82, 0x00, address]);
         }
 
         /// <summary>
@@ -767,27 +772,27 @@ namespace Z21lib
         /// </summary>
         /// <param name="address">Locomotive address</param>
         /// <param name="type">Data poll type</param>
-        public void LanRailcomGetdata(LocoAddress address, byte type = 0x01)
+        public bool LanRailcomGetdata(LocoAddress address, byte type = 0x01)
         {
-            Send([0x07, 0x00, 0x89, 0x00, type, address.LSB, address.MSB]);
+            return Send([0x07, 0x00, 0x89, 0x00, type, address.LSB, address.MSB]);
         }
 
         /// <summary>
         /// 9.3 LAN_LOCONET_FROM_LAN
         /// </summary>
         /// <param name="data">LocoNet message (excl. checksum)</param>
-        public void LanLoconetFromLan(byte[] data)
+        public bool LanLoconetFromLan(byte[] data)
         {
-            Send(RequestMessage.CreateLocoNet(0xA2, data));
+            return Send(RequestMessage.CreateLocoNet(0xA2, data));
         }
 
         /// <summary>
         /// 9.4 LAN_LOCONET_DISPATCH_ADDR
         /// </summary>
         /// <param name="address">Locomotive address</param>
-        public void LanLoconetDispatchAddr(LocoAddress address)
+        public bool LanLoconetDispatchAddr(LocoAddress address)
         {
-            Send([0x06, 0x00, 0xA3, 0x00, address.LSB, address.MSB]);
+            return Send([0x06, 0x00, 0xA3, 0x00, address.LSB, address.MSB]);
         }
 
         /// <summary>
@@ -795,9 +800,9 @@ namespace Z21lib
         /// </summary>
         /// <param name="type">Request type</param>
         /// <param name="address">Report address</param>
-        public void LanLoconetDetector(LoconetRequestType type, Address address)
+        public bool LanLoconetDetector(LoconetRequestType type, Address address)
         {
-            Send([0x07, 0x00, 0xA4, 0x00, (byte)type, address.LSB, address.MSB]);
+            return Send([0x07, 0x00, 0xA4, 0x00, (byte)type, address.LSB, address.MSB]);
         }
 
         /// <summary>
@@ -805,18 +810,18 @@ namespace Z21lib
         /// </summary>
         /// <param name="type">Request type</param>
         /// <param name="networkId">CAN-Network ID</param>
-        public void LanCanDetector(byte type, Address networkId)
+        public bool LanCanDetector(byte type, Address networkId)
         {
-            Send(RequestMessage.Create(0xC4, [type, networkId.LSB, networkId.MSB]));
+            return Send(RequestMessage.Create(0xC4, [type, networkId.LSB, networkId.MSB]));
         }
 
         /// <summary>
         /// 10.2.1 LAN_CAN_DEVICE_GET_DESCRIPTION
         /// </summary>
         /// <param name="networkId">CAN-Network ID</param>
-        public void LanCanDeviceGetDescription(Address networkId)
+        public bool LanCanDeviceGetDescription(Address networkId)
         {
-            Send(RequestMessage.Create(0xC8, [networkId.LSB, networkId.MSB]));
+            return Send(RequestMessage.Create(0xC8, [networkId.LSB, networkId.MSB]));
         }
 
         /// <summary>
@@ -824,12 +829,12 @@ namespace Z21lib
         /// </summary>
         /// <param name="networkId">CAN-Network ID</param>
         /// <param name="description">CAN device description (max length: 16)</param>
-        public void LanCanDeviceSetDescription(Address networkId, string description)
+        public bool LanCanDeviceSetDescription(Address networkId, string description)
         {
             byte[] data = new byte[18];
             Array.Copy(LE.Parse(networkId.Value), data, 2);
             Array.Copy(Utils.ConvertString(description, 16), 0, data, 2, 16);
-            Send(RequestMessage.Create(0xC9, data));
+            return Send(RequestMessage.Create(0xC9, data));
         }
 
         /// <summary>
@@ -837,42 +842,42 @@ namespace Z21lib
         /// </summary>
         /// <param name="networkId">CAN-Network ID</param>
         /// <param name="power">Power mode</param>
-        public void LanCanBoosterSetTrackpower(Address networkId, Power power)
+        public bool LanCanBoosterSetTrackpower(Address networkId, Power power)
         {
-            Send(RequestMessage.Create(0xCB, [networkId.LSB, networkId.MSB, (byte)power]));
+            return Send(RequestMessage.Create(0xCB, [networkId.LSB, networkId.MSB, (byte)power]));
         }
 
         /// <summary>
         /// 11.1.1.1 LAN_ZLINK_GET_HWINFO
         /// </summary>
-        public void LanZlinkGetHwinfo()
+        public bool LanZlinkGetHwinfo()
         {
-            Send([0x05, 0x00, 0xE8, 0x00, 0x06]);
+            return Send([0x05, 0x00, 0xE8, 0x00, 0x06]);
         }
 
         /// <summary>
         /// 11.2.1 LAN_BOOSTER_GET_DESCRIPTION
         /// </summary>
-        public void LanBoosterGetDescription()
+        public bool LanBoosterGetDescription()
         {
-            Send([0x04, 0x00, 0xB8, 0x00]);
+            return Send([0x04, 0x00, 0xB8, 0x00]);
         }
 
         /// <summary>
         /// 11.2.2 LAN_BOOSTER_SET_DESCRIPTION
         /// </summary>
         /// <param name="description">Description as Latin-1 string (max length: 32, recommended: 16)</param>
-        public void LanBoosterSetDescription(string description)
+        public bool LanBoosterSetDescription(string description)
         {
-            Send(RequestMessage.Create(0xB9, Utils.ConvertString(description, 32)));
+            return Send(RequestMessage.Create(0xB9, Utils.ConvertString(description, 32)));
         }
 
         /// <summary>
         /// 11.2.3 LAN_BOOSTER_SYSTEMSTATE_GETDATA
         /// </summary>
-        public void LanBoosterSystemstateGetdata()
+        public bool LanBoosterSystemstateGetdata()
         {
-            Send([0x04, 0x00, 0xBB, 0x00]);
+            return Send([0x04, 0x00, 0xBB, 0x00]);
         }
 
         /// <summary>
@@ -880,34 +885,34 @@ namespace Z21lib
         /// </summary>
         /// <param name="port">Booster port (flags)</param>
         /// <param name="activate">Is active</param>
-        public void LanBoosterSetPower(BoosterPort port, bool activate)
+        public bool LanBoosterSetPower(BoosterPort port, bool activate)
         {
-            Send(RequestMessage.Create(0xB2, [(byte)port, (byte)(activate ? 0x01 : 0x00)]));
+            return Send(RequestMessage.Create(0xB2, [(byte)port, (byte)(activate ? 0x01 : 0x00)]));
         }
 
         /// <summary>
         /// 11.3.1 LAN_DECODER_GET_DESCRIPTION
         /// </summary>
-        public void LanDecoderGetDescription()
+        public bool LanDecoderGetDescription()
         {
-            Send([0x04, 0x00, 0xD8, 0x00]);
+            return Send([0x04, 0x00, 0xD8, 0x00]);
         }
 
         /// <summary>
         /// 11.3.2 LAN_DECODER_SET_DESCRIPTION
         /// </summary>
         /// <param name="description">Description as Latin-1 string (max length: 32, recommended: 16)</param>
-        public void LanDecoderSetDescription(string description)
+        public bool LanDecoderSetDescription(string description)
         {
-            Send(RequestMessage.Create(0xD9, Utils.ConvertString(description, 32)));
+            return Send(RequestMessage.Create(0xD9, Utils.ConvertString(description, 32)));
         }
 
         /// <summary>
         /// 11.3.3 LAN_DECODER_SYSTEMSTATE_GETDATA
         /// </summary>
-        public void LanDecoderSystemstateGetdata()
+        public bool LanDecoderSystemstateGetdata()
         {
-            Send([0x04, 0x00, 0xDB, 0x00]);
+            return Send([0x04, 0x00, 0xDB, 0x00]);
         }
 
         /// <summary>
@@ -916,9 +921,9 @@ namespace Z21lib
         /// <remarks>
         /// 12.1 LAN_FAST_CLOCK_CONTROL
         /// </remarks>
-        public void LanFastClockControl_GetFastClockTime()
+        public bool LanFastClockControl_GetFastClockTime()
         {
-            Send([0x07, 0x00, 0xCC, 0x00, 0x21, 0x2A, 0x0B]);
+            return Send([0x07, 0x00, 0xCC, 0x00, 0x21, 0x2A, 0x0B]);
         }
 
         /// <summary>
@@ -929,7 +934,7 @@ namespace Z21lib
         /// </remarks>
         /// <param name="time">Time to be set</param>
         /// <param name="rate">Clock rate (0 - stopped, 1 - real time, 2 - 2x real time, 3 - 3x real time, ..., 63 - 63x real time)</param>
-        public void LanFastClockControl_SetFastClockTime(DateTime time, byte rate)
+        public bool LanFastClockControl_SetFastClockTime(DateTime time, byte rate)
         {
             if (rate > 63)
                 Extensions.GetException(nameof(rate), "Rate must be between 0 and 63!");
@@ -937,7 +942,7 @@ namespace Z21lib
             byte data2 = (byte)(GetDayOfWeek(time.DayOfWeek) + time.Hour);
             byte data3 = (byte)time.Minute;
 
-            Send(RequestMessage.CreateXOR(0xCC, [0x24, 0x2B, data2, data3, rate]));
+            return Send(RequestMessage.CreateXOR(0xCC, [0x24, 0x2B, data2, data3, rate]));
         }
 
         /// <summary>
@@ -946,9 +951,9 @@ namespace Z21lib
         /// <remarks>
         /// 12.1 LAN_FAST_CLOCK_CONTROL
         /// </remarks>
-        public void LanFastClockControl_StartFastClockTime()
+        public bool LanFastClockControl_StartFastClockTime()
         {
-            Send([0x07, 0x00, 0xCC, 0x00, 0x21, 0x2C, 0x0D]);
+            return Send([0x07, 0x00, 0xCC, 0x00, 0x21, 0x2C, 0x0D]);
         }
 
         /// <summary>
@@ -957,26 +962,26 @@ namespace Z21lib
         /// <remarks>
         /// 12.1 LAN_FAST_CLOCK_CONTROL
         /// </remarks>
-        public void LanFastClockControl_StopFastClockTime()
+        public bool LanFastClockControl_StopFastClockTime()
         {
-            Send([0x07, 0x00, 0xCC, 0x00, 0x21, 0x2D, 0x0C]);
+            return Send([0x07, 0x00, 0xCC, 0x00, 0x21, 0x2D, 0x0C]);
         }
 
         /// <summary>
         /// 12.3 LAN_FAST_CLOCK_SETTINGS_GET
         /// </summary>
-        public void LanFastClockSettingsGet()
+        public bool LanFastClockSettingsGet()
         {
-            Send([0x05, 0x00, 0xCE, 0x00, 0x04]);
+            return Send([0x05, 0x00, 0xCE, 0x00, 0x04]);
         }
 
         /// <summary>
         /// 12.4 LAN_FAST_CLOCK_SETTINGS_SET
         /// </summary>
         /// <param name="settings">Settings flags</param>
-        public void LanFastClockSettingsSet(FcSettings settings)
+        public bool LanFastClockSettingsSet(FcSettings settings)
         {
-            Send([0x05, 0x00, 0xCF, 0x00, (byte)settings]);
+            return Send([0x05, 0x00, 0xCF, 0x00, (byte)settings]);
         }
 
         /// <summary>
@@ -984,12 +989,12 @@ namespace Z21lib
         /// </summary>
         /// <param name="settings">Settings flags</param>
         /// <param name="rate">Clock rate (0 - stopped, 1 - real time, 2 - 2x real time, 3 - 3x real time, ..., 63 - 63x real time)</param>
-        public void LanFastClockSettingsSet(FcSettings settings, byte rate)
+        public bool LanFastClockSettingsSet(FcSettings settings, byte rate)
         {
             if (rate > 63)
                 Extensions.GetException(nameof(rate), "Rate must be between 0 and 63!");
 
-            Send([0x06, 0x00, 0xCF, 0x00, (byte)settings, rate]);
+            return Send([0x06, 0x00, 0xCF, 0x00, (byte)settings, rate]);
         }
 
         /// <summary>
@@ -998,7 +1003,7 @@ namespace Z21lib
         /// <param name="settings">Settings flags</param>
         /// <param name="rate">Clock rate (0 - stopped, 1 - real time, 2 - 2x real time, 3 - 3x real time, ..., 63 - 63x real time)</param>
         /// <param name="time">Time to be set</param>
-        public void LanFastClockSettingsSet(FcSettings settings, byte rate, DateTime time)
+        public bool LanFastClockSettingsSet(FcSettings settings, byte rate, DateTime time)
         {
             if (rate > 63)
                 Extensions.GetException(nameof(rate), "Rate must be between 0 and 63!");
@@ -1006,7 +1011,7 @@ namespace Z21lib
             byte data2 = (byte)(GetDayOfWeek(time.DayOfWeek) + time.Hour);
             byte data3 = (byte)time.Minute;
 
-            Send([0x08, 0x00, 0xCF, 0x00, (byte)settings, rate, data2, data3]);
+            return Send([0x08, 0x00, 0xCF, 0x00, (byte)settings, rate, data2, data3]);
         }
         #endregion
 
