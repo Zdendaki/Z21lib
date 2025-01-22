@@ -36,7 +36,7 @@ namespace Z21lib
             EnableBroadcast = true;
             _connected = true;
             BeginReceive(new AsyncCallback(Callback), null);
-            SendingLoop();
+            Task.Run(SendingLoop);
             
             LanGetSerialNumber();
         }
