@@ -7,7 +7,7 @@
     <Authors>Zdeněk Kundrát</Authors>
     <Company>Zdendaki.net</Company>
     <Product>Z21 library</Product>
-	<AssemblyVersion>1.0.5.0</AssemblyVersion>
+	<AssemblyVersion>1.0.6.0</AssemblyVersion>
 	<Title>Z21 library</Title>
 	<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	<Platforms>AnyCPU;x64;x86;ARM32;ARM64</Platforms>

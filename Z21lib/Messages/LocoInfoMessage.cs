@@ -46,7 +46,7 @@ namespace Z21lib.Messages
             bool doubleTraction = false;
             bool smartSearch = false;
             bool light = false;
-            bool[] functions = new bool[29];
+            bool[] functions = new bool[32];
 
             if (message.Length > 8)
             {
@@ -74,19 +74,19 @@ namespace Z21lib.Messages
             }
             if (message.Length > 11)
             {
-                FillFunctions(message[10], ref functions, 5);
+                FillFunctions(message[10], ref functions, 5, 8);
             }
             if (message.Length > 12)
             {
-                FillFunctions(message[11], ref functions, 13);
+                FillFunctions(message[11], ref functions, 13, 8);
             }
             if (message.Length > 13)
             {
-                FillFunctions(message[12], ref functions, 21);
+                FillFunctions(message[12], ref functions, 21, 8);
             }
             if (message.Length > 14)
             {
-                FillFunctions(message[13], ref functions, 29);
+                FillFunctions(message[13], ref functions, 29, 3);
             }
 
             LocoInfoMessage lm = new()
@@ -104,26 +104,12 @@ namespace Z21lib.Messages
             return lm;
         }
 
-        private static int FunctionsLength(int messageSize)
+        private static void FillFunctions(byte data, ref bool[] functions, int start, int count)
         {
-            if (messageSize < 11)
-                return 0;
-            if (messageSize == 11)
-                return 4;
-            else
-                return 4 + (messageSize - 11) * 8;
-        }
-
-        private static void FillFunctions(byte data, ref bool[] functions, int start)
-        {
-            functions[start + 7] = data.Bit(7);
-            functions[start + 6] = data.Bit(6);
-            functions[start + 5] = data.Bit(5);
-            functions[start + 4] = data.Bit(4);
-            functions[start + 3] = data.Bit(3);
-            functions[start + 2] = data.Bit(2);
-            functions[start + 1] = data.Bit(1);
-            functions[start] = data.Bit(0);
+            for (int i = 0; i < count; i++)
+            {
+                functions[start + i] = data.Bit(i);
+            }
         }
 
         private static int ParseSpeed(SpeedSteps steps, byte speedData)
