@@ -1,4 +1,5 @@
-﻿using Z21lib;
+﻿using System.Diagnostics;
+using Z21lib;
 using Z21lib.Enums;
 using Z21lib.Messages;
 using Z21lib.Structs;
@@ -9,13 +10,60 @@ namespace TestClient
     {
         static void Main(string[] args)
         {
-            Z21Client client = new Z21Client(new Z21Info("192.168.0.111", 21105));
+            Z21Client client = new Z21Client(new Z21Info("192.168.1.222", 21106));
             client.MessageReceived += Client_MessageReceived;
 
+            Console.WriteLine("Reconnecting...");
+
             client.Connect();
+
+            client.LanSetBroadcastflags(BroadcastFlags.BasicData | BroadcastFlags.AllLocomotives);
+
+            bool stop = false;
+            Stopwatch sw = new();
+            sw.Start();
+            byte i = 0;
+
+            while (true)
+            {
+                if (!client.IsConnected)
+                {
+                    Console.WriteLine("Reconnecting...");
+                    if (!client.Connect())
+                    {
+                        Thread.Sleep(1000);
+                        continue;
+                    }
+                }
+
+                if (sw.ElapsedMilliseconds > 100)
+                {
+                    client.LanXSetLocoDrive(new LocoAddress(3), new(SpeedSteps.DCC128, LocoDirection.Forward, i, stop));
+                    client.LanXSetLocoDrive(new LocoAddress(4), new(SpeedSteps.DCC128, LocoDirection.Forward, i, stop));
+                    client.LanXSetLocoDrive(new LocoAddress(5), new(SpeedSteps.DCC128, LocoDirection.Forward, i, stop));
+                    sw.Restart();
+                    i++;
+                }
+
+                if (i > 100)
+                    i = 0;
+
+                if (Console.KeyAvailable)
+                {
+                    ConsoleKeyInfo key = Console.ReadKey(true);
+                    if (key.Key == ConsoleKey.S)
+                        stop = !stop;
+                }
+
+                Thread.Sleep(10);
+            }
+
+            /*
             while (true)
             {
                 string bytes = Console.ReadLine()!.ToLower();
+
+                
 
                 if (bytes.EndsWith("xx"))
                     client.Send(ComputeXOR(bytes.Replace("xx", null).ToByteArray()));
@@ -29,7 +77,7 @@ namespace TestClient
                     client.LanXSetTurnout(new(ushort.Parse(bytes.Replace("ss:", null).Replace("+", null).Replace("-", null))), bytes.Last() == '+', false, true);
                 else
                     client.Send(bytes.ToByteArray());
-            }
+            }*/
         }
 
         private static byte[] ComputeXOR(byte[] input)

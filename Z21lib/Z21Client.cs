@@ -19,10 +19,12 @@ namespace Z21lib
 
         private IPAddress IP;
         private int Port;
-        bool _connected = false;
+        private bool _connected = false;
 
-        MemoryStream _sendBuffer = new(1024);
+        MemoryStream _sendBuffer = new(1472);
         Thread _loopThread;
+
+        public bool IsConnected => Active;
 
         public Z21Client(Z21Info info) : base(info.Port)
         {
@@ -34,16 +36,27 @@ namespace Z21lib
             };
         }
 
-        public void Connect()
+        public bool Connect()
         {
-            Connect(IP, Port);
-            DontFragment = false;
-            EnableBroadcast = true;
-            _connected = true;
+            try
+            {
+                Connect(IP, Port);
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (!Active)
+                return false;
+
+            DontFragment = true;
+            EnableBroadcast = false;
             BeginReceive(new AsyncCallback(Callback), null);
             _loopThread.Start();
-            
-            LanGetSerialNumber();
+
+            _connected = LanGetSerialNumber();
+            return _connected;
         }
 
         public void Disconnect()
@@ -52,9 +65,15 @@ namespace Z21lib
             _loopThread.Join();
         }
 
+        public bool Reconnect()
+        {
+            Disconnect();
+            return Connect();
+        }
+
         private void SendingLoop()
         {
-            while (_connected)
+            while (Active && _connected)
             {
                 byte[] buffer;
                 lock (_sendBuffer)
@@ -64,7 +83,16 @@ namespace Z21lib
                 }
 
                 if (buffer.Length > 0)
-                    Send(buffer, buffer.Length);
+                {
+                    try
+                    {
+                        Send(buffer, buffer.Length);
+                    }
+                    catch 
+                    {
+                        Disconnect();
+                    }
+                }
 
                 Thread.Sleep(20);
             }
@@ -74,7 +102,7 @@ namespace Z21lib
         {
             IPEndPoint? sender = null!;
             byte[] buffer = EndReceive(result, ref sender);
-            if (_connected)
+            if (Active)
                 BeginReceive(new AsyncCallback(Callback), null);
             ParseData(buffer);
         }
@@ -313,7 +341,7 @@ namespace Z21lib
         /// <param name="data">Data buffer</param>
         public bool Send(byte[] data)
         {
-            if (!_connected || _sendBuffer.Position + data.Length > _sendBuffer.Capacity)
+            if (!Active || _sendBuffer.Position + data.Length > _sendBuffer.Capacity)
                 return false;
 
             lock (_sendBuffer)
