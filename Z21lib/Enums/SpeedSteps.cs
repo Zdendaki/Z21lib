@@ -2,8 +2,8 @@
 {
     public enum SpeedSteps : byte
     {
-        DCC14 = 0x0,
-        DCC28 = 0x2,
-        DCC128 = 0x3
+        DCC14 = 0,
+        DCC28 = 2,
+        DCC128 = 4
     }
 }

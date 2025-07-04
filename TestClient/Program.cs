@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Reflection;
 using Z21lib;
 using Z21lib.Enums;
 using Z21lib.Messages;
@@ -10,7 +11,7 @@ namespace TestClient
     {
         static void Main(string[] args)
         {
-            Z21Client client = new Z21Client(new Z21Info("192.168.1.222", 21106));
+            Z21Client client = new Z21Client(new Z21Info("192.168.1.222", 21105));
             client.MessageReceived += Client_MessageReceived;
 
             Console.WriteLine("Reconnecting...");
@@ -58,8 +59,8 @@ namespace TestClient
                 Thread.Sleep(10);
             }
 
-            /*
-            while (true)
+            
+            /*while (true)
             {
                 string bytes = Console.ReadLine()!.ToLower();
 
@@ -77,7 +78,7 @@ namespace TestClient
                     client.LanXSetTurnout(new(ushort.Parse(bytes.Replace("ss:", null).Replace("+", null).Replace("-", null))), bytes.Last() == '+', false, true);
                 else
                     client.Send(bytes.ToByteArray());
-            }*/
+            }
         }
 
         private static byte[] ComputeXOR(byte[] input)
@@ -89,22 +90,50 @@ namespace TestClient
 
             Array.Copy(input, output, input.Length);
             output[input.Length] = xor;
-            return output;
+            return output;*/
         }
 
+        private static object _lock = new object();
         private static void Client_MessageReceived(Message message)
         {
-            MessageType type = message.Type;
-
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(Enum.GetName(typeof(MessageType), type));
-            Console.ForegroundColor = ConsoleColor.White;
-            foreach (var prop in message.GetType().GetProperties())
+            lock (_lock)
             {
-                if (prop.Name != "Type")
-                    Console.WriteLine($"{prop.Name} = {prop.GetValue(message)}");
+                MessageType type = message.Type;
+
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine(Enum.GetName(typeof(MessageType), type));
+                Console.ForegroundColor = ConsoleColor.White;
+                ReflectionForeach(message.GetType(), message, 0);
+                Console.ForegroundColor = ConsoleColor.Gray;
             }
-            Console.ForegroundColor = ConsoleColor.Gray;
+        }
+
+        private static void ReflectionForeach(Type type, object? obj, int indetation)
+        {
+            foreach (PropertyInfo prop in type.GetProperties())
+            {
+                if (prop.Name == "Type")
+                    continue;
+
+                if (prop.PropertyType.IsClass && prop.PropertyType != typeof(string))
+                {
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                    Console.WriteLine($"{new string(' ', indetation)}{prop.Name}:");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    ReflectionForeach(prop.PropertyType, prop.GetValue(obj), indetation + 4);
+                }
+                else
+                {
+                    try
+                    {
+                        Console.WriteLine($"{new string(' ', indetation)}{prop.Name} = {prop.GetValue(obj)}");
+                    }
+                    catch
+                    {
+                        Console.WriteLine($"{new string(' ', indetation)}{prop.Name} = <error retrieving value>");
+                    }
+                }
+            }
         }
     }
 }
