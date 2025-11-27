@@ -53,20 +53,23 @@ namespace Z21lib.Messages
             CentralStateEx = centralStateEx;
         }
 
-        internal SystemStateMessage(byte[] data) : base(MessageType.LAN_SYSTEMSTATE_DATACHANGED)
+        internal SystemStateMessage(ReadOnlySpan<byte> data) : base(MessageType.LAN_SYSTEMSTATE_DATACHANGED)
         {
-            using (LittleEndianReader lr = new(data))
-            {
-                MainCurrent = lr.ReadInt16();
-                ProgCurrent = lr.ReadInt16();
-                FilteredMaincurrent = lr.ReadInt16();
-                Temperature = lr.ReadInt16();
-                SupplyVoltage = lr.ReadUInt16();
-                VCCVoltage = lr.ReadUInt16();
-                CentralState = (CentralState)lr.ReadByte();
-                CentralStateEx = (CentralStateEx)lr.ReadByte();
-                Capabilities = (Capabilities)lr.ReadByte();
-            }
+            var lr = new LittleEndianReader(data, 4);
+            MainCurrent = lr.ReadInt16();
+            ProgCurrent = lr.ReadInt16();
+            FilteredMaincurrent = lr.ReadInt16();
+            Temperature = lr.ReadInt16();
+            SupplyVoltage = lr.ReadUInt16();
+            VCCVoltage = lr.ReadUInt16();
+            CentralState = (CentralState)lr.ReadByte();
+            CentralStateEx = (CentralStateEx)lr.ReadByte();
+            Capabilities = (Capabilities)lr.ReadByte();
+        }
+
+        internal static SystemStateMessage Parse(ReadOnlySpan<byte> message)
+        {
+            return new SystemStateMessage(message);
         }
     }
 }

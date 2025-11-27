@@ -18,7 +18,7 @@ namespace Z21lib.Messages
 
         }
 
-        public static LoconetDetectorMessage Parse(byte[] message)
+        public static LoconetDetectorMessage Parse(ReadOnlySpan<byte> message)
         {
             byte dataLength;
             LoconetFeedbackType type = (LoconetFeedbackType)message[4];
@@ -44,7 +44,7 @@ namespace Z21lib.Messages
             {
                 FeedbackType = type,
                 FeedbackAddress = new Address(message[6], message[5]),
-                Data = message[7..(7 + dataLength)]
+                Data = message.Slice(7, dataLength).ToArray()
             };
         }
     }

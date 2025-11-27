@@ -12,9 +12,9 @@ namespace Z21lib.Messages
             BroadcastFlags = flags;
         }
 
-        internal static BroadcastFlagsMessage Parse(byte[] message)
+        internal static BroadcastFlagsMessage Parse(ReadOnlySpan<byte> message)
         {
-            return new BroadcastFlagsMessage((BroadcastFlags)LE.ToUInt32(message, 4));
+            return new BroadcastFlagsMessage((BroadcastFlags)LE.ToUInt32(message.Slice(4)));
         }
     }
 }

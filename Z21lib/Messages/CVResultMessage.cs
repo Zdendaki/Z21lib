@@ -14,7 +14,7 @@ namespace Z21lib.Messages
             Value = value;
         }
 
-        internal static CVResultMessage Parse(byte[] message)
+        internal static CVResultMessage Parse(ReadOnlySpan<byte> message)
         {
             return new(message[6], message[7], message[8]);
         }

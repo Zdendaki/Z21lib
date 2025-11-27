@@ -12,5 +12,10 @@ namespace Z21lib.Messages
         {
             Binary = data;
         }
+
+        public NotImplementedMessage(ReadOnlySpan<byte> data) : base(MessageType.NOT_IMPLEMENTED)
+        {
+            Binary = data.ToArray();
+        }
     }
 }

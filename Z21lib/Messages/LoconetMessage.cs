@@ -6,12 +6,12 @@ namespace Z21lib.Messages
     {
         public byte[] LoconetData { get; init; }
 
-        public LoconetMessage(MessageType type, byte[] message) : base(type)
+        public LoconetMessage(MessageType type, ReadOnlySpan<byte> message) : base(type)
         {
-            if (type != MessageType.LAN_LOCONET_Z21_RX || type != MessageType.LAN_LOCONET_Z21_TX || type != MessageType.LAN_LOCONET_FROM_LAN)
+            if (type != MessageType.LAN_LOCONET_Z21_RX && type != MessageType.LAN_LOCONET_Z21_TX && type != MessageType.LAN_LOCONET_FROM_LAN)
                 throw new ArgumentException("Invalid message type for this message handler!", nameof(type));
 
-            LoconetData = message.SubArray(4, message.Length - 4);
+            LoconetData = message.Slice(4).ToArray();
         }
     }
 }

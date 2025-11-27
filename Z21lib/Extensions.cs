@@ -11,6 +11,11 @@ namespace Z21lib
             return output;
         }
 
+        public static byte[] ToArray(this ReadOnlySpan<byte> span)
+        {
+            return span.ToArray();
+        }
+
         public static bool FlagPresent<T>(this uint input, T flag) where T : Enum
         {
             return (input & (uint)(object)flag) != 0;

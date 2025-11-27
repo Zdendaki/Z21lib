@@ -31,16 +31,16 @@ namespace Z21lib.Messages
 
         }
 
-        public static CanDetectorMessage Parse(byte[] message)
+        public static CanDetectorMessage Parse(ReadOnlySpan<byte> message)
         {
             return new()
             {
-                NID = LE.ToUInt16(message, 4),
-                Address = LE.ToUInt16(message, 6),
+                NID = LE.ToUInt16(message.Slice(4)),
+                Address = LE.ToUInt16(message.Slice(6)),
                 Port = message[8],
                 CanType = message[9],
-                Value1 = LE.ToUInt16(message, 10),
-                Value2 = LE.ToUInt16(message, 12)
+                Value1 = LE.ToUInt16(message.Slice(10)),
+                Value2 = LE.ToUInt16(message.Slice(12))
             };
         }
     }

@@ -25,15 +25,15 @@ namespace Z21lib.Messages
         {
         }
 
-        public static CanBoosterSystemstateMessage Parse(byte[] message)
+        public static CanBoosterSystemstateMessage Parse(ReadOnlySpan<byte> message)
         {
             return new CanBoosterSystemstateMessage
             {
-                NID = LE.ToUInt16(message, 4),
-                OutputPort = LE.ToUInt16(message, 6),
-                State = (BoosterState)LE.ToUInt16(message, 8),
-                Voltage = LE.ToUInt16(message, 10),
-                Current = LE.ToUInt16(message, 12)
+                NID = LE.ToUInt16(message.Slice(4)),
+                OutputPort = LE.ToUInt16(message.Slice(6)),
+                State = (BoosterState)LE.ToUInt16(message.Slice(8)),
+                Voltage = LE.ToUInt16(message.Slice(10)),
+                Current = LE.ToUInt16(message.Slice(12))
             };
         }
     }

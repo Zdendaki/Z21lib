@@ -36,7 +36,7 @@ namespace Z21lib.Messages
             Functions = new bool[29];
         }
 
-        internal static LocoInfoMessage Parse(byte[] message)
+        internal static LocoInfoMessage Parse(ReadOnlySpan<byte> message)
         {
             bool busy = false;
             DecoderMode mode = DecoderMode.DCC;

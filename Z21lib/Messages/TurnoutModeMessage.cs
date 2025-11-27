@@ -14,7 +14,7 @@ namespace Z21lib.Messages
             Mode = mode;
         }
 
-        internal static TurnoutModeMessage Parse(byte[] message)
+        internal static TurnoutModeMessage Parse(ReadOnlySpan<byte> message)
         {
             return new TurnoutModeMessage(new Address(message[4], message[5]), (DecoderMode)message[6]);
         }

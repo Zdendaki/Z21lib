@@ -4,36 +4,6 @@ namespace Z21lib.Endianity
 {
     static class BE
     {
-        public static short ToInt16(byte[] data, int startIndex)
-        {
-            return BinaryPrimitives.ReadInt16BigEndian(data.AsSpan(startIndex, sizeof(short)));
-        }
-
-        public static ushort ToUInt16(byte[] data, int startIndex)
-        {
-            return BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(startIndex, sizeof(ushort)));
-        }
-
-        public static int ToInt32(byte[] data, int startIndex)
-        {
-            return BinaryPrimitives.ReadInt32BigEndian(data.AsSpan(startIndex, sizeof(int)));
-        }
-
-        public static uint ToUInt32(byte[] data, int startIndex)
-        {
-            return BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(startIndex, sizeof(uint)));
-        }
-
-        public static long ToInt64(byte[] data, int startIndex)
-        {
-            return BinaryPrimitives.ReadInt64BigEndian(data.AsSpan(startIndex, sizeof(long)));
-        }
-
-        public static ulong ToUInt64(byte[] data, int startIndex)
-        {
-            return BinaryPrimitives.ReadUInt64BigEndian(data.AsSpan(startIndex, sizeof(ulong)));
-        }
-
         public static byte[] Parse(short data)
         {
             byte[] binary = new byte[sizeof(short)];
@@ -74,6 +44,37 @@ namespace Z21lib.Endianity
             byte[] binary = new byte[sizeof(ulong)];
             BinaryPrimitives.WriteUInt64BigEndian(binary, data);
             return binary;
+        }
+
+        // Span-based methods for zero-allocation writes
+        public static void Write(Span<byte> destination, short value)
+        {
+            BinaryPrimitives.WriteInt16BigEndian(destination, value);
+        }
+
+        public static void Write(Span<byte> destination, ushort value)
+        {
+            BinaryPrimitives.WriteUInt16BigEndian(destination, value);
+        }
+
+        public static void Write(Span<byte> destination, int value)
+        {
+            BinaryPrimitives.WriteInt32BigEndian(destination, value);
+        }
+
+        public static void Write(Span<byte> destination, uint value)
+        {
+            BinaryPrimitives.WriteUInt32BigEndian(destination, value);
+        }
+
+        public static void Write(Span<byte> destination, long value)
+        {
+            BinaryPrimitives.WriteInt64BigEndian(destination, value);
+        }
+
+        public static void Write(Span<byte> destination, ulong value)
+        {
+            BinaryPrimitives.WriteUInt64BigEndian(destination, value);
         }
     }
 }

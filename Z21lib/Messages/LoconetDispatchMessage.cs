@@ -18,7 +18,7 @@ namespace Z21lib.Messages
 
         }
 
-        public static LoconetDispatchMessage Parse(byte[] message)
+        public static LoconetDispatchMessage Parse(ReadOnlySpan<byte> message)
         {
             return new()
             {

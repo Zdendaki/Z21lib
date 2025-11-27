@@ -18,9 +18,9 @@ namespace Z21lib.Messages
             VersionMinor = minor;
         }
 
-        internal static HardwareTypeMessage Parse(byte[] message)
+        internal static HardwareTypeMessage Parse(ReadOnlySpan<byte> message)
         {
-            HardwareType hw = (HardwareType)LE.ToUInt32(message, 4);
+            HardwareType hw = (HardwareType)LE.ToUInt32(message.Slice(4));
             return new HardwareTypeMessage(hw, message[9].FromBCD(), message[8].FromBCD());
         }
     }

@@ -27,9 +27,9 @@ namespace Z21lib.Messages
             QoS = qos;
         }
 
-        internal static RailComDataMessage Parse(byte[] message)
+        internal static RailComDataMessage Parse(ReadOnlySpan<byte> message)
         {
-            return new RailComDataMessage(new(message[5], message[4]), LE.ToUInt32(message, 6), LE.ToUInt16(message, 10), (RailComOptions)message[13], message[14], message[15]);
+            return new RailComDataMessage(new(message[5], message[4]), LE.ToUInt32(message.Slice(6)), LE.ToUInt16(message.Slice(10)), (RailComOptions)message[13], message[14], message[15]);
         }
     }
 }

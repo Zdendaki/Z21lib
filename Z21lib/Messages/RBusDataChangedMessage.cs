@@ -6,7 +6,7 @@ namespace Z21lib.Messages
     {
         public List<TrackData> Tracks { get; init; }
 
-        public RBusDataChangedMessage(byte[] data) : base(MessageType.LAN_RMBUS_DATACHANGED)
+        public RBusDataChangedMessage(ReadOnlySpan<byte> data) : base(MessageType.LAN_RMBUS_DATACHANGED)
         {
             int group = data[0] == 1 ? 10 : 0;
 

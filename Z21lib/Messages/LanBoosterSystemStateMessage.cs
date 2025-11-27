@@ -35,19 +35,19 @@ namespace Z21lib.Messages
         {
         }
 
-        public static LanBoosterSystemStateMessage Parse(byte[] message)
+        public static LanBoosterSystemStateMessage Parse(ReadOnlySpan<byte> message)
         {
             return new()
             {
-                Booster1MainCurrent = LE.ToInt16(message, 4),
-                Booster2MainCurrent = LE.ToInt16(message, 6),
-                Booster1FilteredMainCurrent = LE.ToInt16(message, 8),
-                Booster2FilteredMainCurrent = LE.ToInt16(message, 10),
-                Booster1Temperature = LE.ToInt16(message, 12),
-                Booster2Temperature = LE.ToInt16(message, 14),
-                SupplyVoltage = LE.ToUInt16(message, 16),
-                Booster1VCCVoltage = LE.ToUInt16(message, 18),
-                Booster2VCCVoltage = LE.ToUInt16(message, 20),
+                Booster1MainCurrent = LE.ToInt16(message.Slice(4)),
+                Booster2MainCurrent = LE.ToInt16(message.Slice(6)),
+                Booster1FilteredMainCurrent = LE.ToInt16(message.Slice(8)),
+                Booster2FilteredMainCurrent = LE.ToInt16(message.Slice(10)),
+                Booster1Temperature = LE.ToInt16(message.Slice(12)),
+                Booster2Temperature = LE.ToInt16(message.Slice(14)),
+                SupplyVoltage = LE.ToUInt16(message.Slice(16)),
+                Booster1VCCVoltage = LE.ToUInt16(message.Slice(18)),
+                Booster2VCCVoltage = LE.ToUInt16(message.Slice(20)),
                 CentralState = (BoosterCentralState)message[22],
                 CentralStateEx = (BoosterCentralStateEx)message[23],
                 CentralStateEx2 = (BoosterCentralStateEx2)message[24],

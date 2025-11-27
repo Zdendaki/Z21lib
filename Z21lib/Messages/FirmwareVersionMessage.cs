@@ -14,7 +14,7 @@ namespace Z21lib.Messages
             Minor = minor;
         }
 
-        internal static FirmwareVersionMessage Parse(byte[] message)
+        internal static FirmwareVersionMessage Parse(ReadOnlySpan<byte> message)
         {
             return new FirmwareVersionMessage(message[6].FromBCD(), message[7].FromBCD());
         }

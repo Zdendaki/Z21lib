@@ -14,7 +14,7 @@ namespace Z21lib.Messages
             State = state;
         }
 
-        internal static TurnoutInfoMessage Parse(byte[] message)
+        internal static TurnoutInfoMessage Parse(ReadOnlySpan<byte> message)
         {
             return new(new Address(message[5], message[6]), (TurnoutState)message[7]);
         }

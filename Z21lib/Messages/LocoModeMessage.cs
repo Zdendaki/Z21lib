@@ -14,7 +14,7 @@ namespace Z21lib.Messages
             Mode = mode;
         }
 
-        internal static LocoModeMessage Parse(byte[] message)
+        internal static LocoModeMessage Parse(ReadOnlySpan<byte> message)
         {
             return new LocoModeMessage(new LocoAddress(message[4], message[5]), (DecoderMode)message[6]);
         }

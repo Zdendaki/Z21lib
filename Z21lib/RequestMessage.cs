@@ -10,16 +10,18 @@ namespace Z21lib
         /// <param name="header">Header (big endian)</param>
         /// <param name="data">Message data</param>
         /// <param name="mode">Message modus</param>
-        /// <param name="hasXor">Has XOR</param>
         /// <returns></returns>
         public static byte[] CreateMode(ushort header, byte[] data, byte mode)
         {
             ushort length = (ushort)(data.Length + 5);
             byte[] message = new byte[length];
-            Array.Copy(LE.Parse(length), message, 2);
-            Array.Copy(LE.Parse(header), 0, message, 2, 2);
-            Array.Copy(data, 0, message, 4, data.Length);
+            Span<byte> span = message;
+
+            LE.Write(span, length);
+            LE.Write(span.Slice(2), header);
+            data.CopyTo(span.Slice(4));
             message[message.Length - 2] = mode;
+
             return message;
         }
 
@@ -29,31 +31,36 @@ namespace Z21lib
         /// <param name="header">Header (big endian)</param>
         /// <param name="data">Message data</param>
         /// <returns>Message byte array</returns>
-        /// <param name="hasXor">Has XOR</param>
         public static byte[] Create(ushort header, byte[] data)
         {
             ushort length = (ushort)(data.Length + 4);
             byte[] message = new byte[length];
-            Array.Copy(LE.Parse(length), message, 2);
-            Array.Copy(LE.Parse(header), 0, message, 2, 2);
-            Array.Copy(data, 0, message, 4, data.Length);
+            Span<byte> span = message;
+
+            LE.Write(span, length);
+            LE.Write(span.Slice(2), header);
+            data.CopyTo(span.Slice(4));
+
             return message;
         }
 
         public static byte[] CreateXOR(ushort header, byte[] data)
         {
             ushort length = (ushort)(data.Length + 5);
-
             byte[] message = new byte[length];
-            Array.Copy(LE.Parse(length), message, 2);
-            Array.Copy(LE.Parse(header), 0, message, 2, 2);
-            Array.Copy(data, 0, message, 4, data.Length);
+            Span<byte> span = message;
+
+            LE.Write(span, length);
+            LE.Write(span.Slice(2), header);
+            data.CopyTo(span.Slice(4));
+
             byte xor = 0;
             for (int i = 0; i < data.Length; i++)
             {
-                xor = (byte)(xor ^ data[i]);
+                xor ^= data[i];
             }
             message[message.Length - 1] = xor;
+
             return message;
         }
 
@@ -65,17 +72,20 @@ namespace Z21lib
         public static byte[] CreateLocoNet(ushort header, byte[] data)
         {
             ushort length = (ushort)(data.Length + 5);
-
             byte[] message = new byte[length];
-            Array.Copy(LE.Parse(length), message, 2);
-            Array.Copy(LE.Parse(header), 0, message, 2, 2);
-            Array.Copy(data, 0, message, 4, data.Length);
+            Span<byte> span = message;
+
+            LE.Write(span, length);
+            LE.Write(span.Slice(2), header);
+            data.CopyTo(span.Slice(4));
+
             byte xor = 0;
             for (int i = 0; i < data.Length; i++)
             {
-                xor = (byte)(xor ^ data[i]);
+                xor ^= data[i];
             }
             message[message.Length - 1] = (byte)~xor;
+
             return message;
         }
 
@@ -87,9 +97,12 @@ namespace Z21lib
         public static byte[] Create(ushort header)
         {
             byte[] message = new byte[4];
+            Span<byte> span = message;
+
             message[0] = 0x04;
             message[1] = 0x00;
-            Array.Copy(LE.Parse(header), 0, message, 2, 2);
+            LE.Write(span.Slice(2), header);
+
             return message;
         }
     }

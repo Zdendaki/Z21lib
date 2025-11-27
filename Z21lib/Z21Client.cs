@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Threading.Channels;
 using Z21lib.Endianity;
 using Z21lib.Enums;
 using Z21lib.Messages;
@@ -21,8 +22,14 @@ namespace Z21lib
         private int Port;
         private bool _connected = false;
 
-        MemoryStream _sendBuffer = new(1472);
-        Thread _loopThread;
+        private readonly Channel<byte[]> _sendQueue = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions
+        {
+            SingleReader = true,
+            SingleWriter = false
+        });
+
+        private CancellationTokenSource? _cancellationTokenSource;
+        private Task? _sendingTask;
 
         public bool IsConnected => Active;
 
@@ -30,10 +37,6 @@ namespace Z21lib
         {
             IP = IPAddress.Parse(info.IP);
             Port = info.Port;
-            _loopThread = new(SendingLoop)
-            {
-                IsBackground = true
-            };
         }
 
         public bool Connect()
@@ -53,7 +56,9 @@ namespace Z21lib
             DontFragment = true;
             EnableBroadcast = false;
             BeginReceive(new AsyncCallback(Callback), null);
-            _loopThread.Start();
+
+            _cancellationTokenSource = new CancellationTokenSource();
+            _sendingTask = SendingLoopAsync(_cancellationTokenSource.Token);
 
             _connected = LanGetSerialNumber();
             return _connected;
@@ -62,7 +67,8 @@ namespace Z21lib
         public void Disconnect()
         {
             _connected = false;
-            _loopThread.Join();
+            _cancellationTokenSource?.Cancel();
+            _sendingTask?.Wait(TimeSpan.FromSeconds(5));
         }
 
         public bool Reconnect()
@@ -71,30 +77,36 @@ namespace Z21lib
             return Connect();
         }
 
-        private void SendingLoop()
+        private async Task SendingLoopAsync(CancellationToken cancellationToken)
         {
-            while (Active && _connected)
+            try
             {
-                byte[] buffer;
-                lock (_sendBuffer)
+                await foreach (var data in _sendQueue.Reader.ReadAllAsync(cancellationToken))
                 {
-                    buffer = _sendBuffer.ToArray();
-                    _sendBuffer.SetLength(0);
-                }
+                    if (!Active || !_connected)
+                        break;
 
-                if (buffer.Length > 0)
-                {
                     try
                     {
-                        Send(buffer, buffer.Length);
+                        Send(data, data.Length);
+                        
+                        // Wait 20ms before sending next message to prevent network overload
+                        await Task.Delay(100, cancellationToken);
                     }
-                    catch 
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch
                     {
                         Disconnect();
+                        break;
                     }
                 }
-
-                Thread.Sleep(20);
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when cancellation is requested
             }
         }
 
@@ -116,40 +128,40 @@ namespace Z21lib
 
             while (position < buffer.Length)
             {
-                int length = GetMessageLength(buffer);
+                int length = GetMessageLength(buffer.AsSpan(position));
 
                 if (length < 4 || position + length > buffer.Length)
                     break;
 
-                ParseMessage(buffer.SubArray(position, length));
+                ParseMessage(buffer.AsSpan(position, length));
                 position += length;
             }
         }
 
-        private int GetMessageLength(byte[] input)
+        private int GetMessageLength(ReadOnlySpan<byte> input)
         {
             if (input.Length < 4)
                 throw Extensions.GetException(nameof(input), "Input data are too short!");
 
-            return LE.ToInt16(input, 0);
+            return LE.ToUInt16(input);
         }
 
-        private void ParseMessage(byte[] message)
+        private void ParseMessage(ReadOnlySpan<byte> message)
         {
-            ushort length = LE.ToUInt16(message, 0);
-            ushort header = LE.ToUInt16(message, 2);
+            ushort length = LE.ToUInt16(message);
+            ushort header = LE.ToUInt16(message.Slice(2));
 
             switch (header)
             {
                 // 2.1 LAN_GET_SERIAL_NUMBER
                 case 0x10:
-                    uint serial = LE.ToUInt32(message, 4);
+                    uint serial = LE.ToUInt32(message.Slice(4));
                     MessageReceived?.Invoke(new SerialNumberMessage(serial));
                     return;
 
                 // All X-BUS messages
                 case 0x40:
-                    parseXbus();
+                    ParseXbusMessage(message, length);
                     return;
 
                 // 2.17 LAN_GET_BROADCASTFLAGS
@@ -159,7 +171,12 @@ namespace Z21lib
 
                 // 2.18 LAN_SYSTEMSTATE_DATACHANGED
                 case 0x84:
-                    MessageReceived?.Invoke(new SystemStateMessage(message.SubArray(4, 16)));
+                    MessageReceived?.Invoke(SystemStateMessage.Parse(message));
+                    return;
+
+                // 2.20 LAN_GET_HWINFO
+                case 0x1A:
+                    MessageReceived?.Invoke(HardwareTypeMessage.Parse(message));
                     return;
 
                 // 2.21 LAN_GET_CODE
@@ -179,7 +196,7 @@ namespace Z21lib
 
                 // 7.1 LAN_RMBUS_DATACHANGED
                 case 0x80:
-                    MessageReceived?.Invoke(new RBusDataChangedMessage(message.SubArray(4, 11)));
+                    MessageReceived?.Invoke(new RBusDataChangedMessage(message.Slice(4, 11)));
                     return;
 
                 // 8.1 LAN_RAILCOM_DATACHANGED
@@ -243,97 +260,96 @@ namespace Z21lib
                     return;
             }
 
-            void parseXbus()
-            {
-                if (length < 6)
-                    return;
-
-                switch (message[4])
-                {
-                    // 2.3 LAN_X_GET_VERSION
-                    case 0x63:
-                        MessageReceived?.Invoke(XBusVersionMessage.Parse(message));
-                        return;
-
-                    case 0x61:
-                        switch (message[5])
-                        {
-                            // 2.7 LAN_X_BC_TRACK_POWER_OFF
-                            case 0x00:
-                                MessageReceived?.Invoke(new Message(MessageType.LAN_X_BC_TRACK_POWER_OFF));
-                                return;
-
-                            // 2.8 LAN_X_BC_TRACK_POWER_ON
-                            case 0x01:
-                                MessageReceived?.Invoke(new Message(MessageType.LAN_X_BC_TRACK_POWER_ON));
-                                return;
-
-                            // 2.9 LAN_X_BC_PROGRAMMING_MODE
-                            case 0x02:
-                                MessageReceived?.Invoke(new Message(MessageType.LAN_X_BC_PROGRAMMING_MODE));
-                                return;
-
-                            // 2.10 LAN_X_BC_TRACK_SHORT_CIRCUIT
-                            case 0x08:
-                                MessageReceived?.Invoke(new Message(MessageType.LAN_X_BC_TRACK_SHORT_CIRCUIT));
-                                return;
-
-                            // 2.11 LAN_X_UNKNOWN_COMMAND
-                            case 0x82:
-                                MessageReceived?.Invoke(new Message(MessageType.LAN_X_UNKNOWN_COMMAND));
-                                return;
-                            // 6.3 LAN_X_CV_NACK_SC
-                            case 0x12:
-                                MessageReceived?.Invoke(new Message(MessageType.LAN_X_CV_NACK_SC));
-                                return;
-                            // 6.4 LAN_X_CV_NACK
-                            case 0x13:
-                                MessageReceived?.Invoke(new Message(MessageType.LAN_X_CV_NACK));
-                                return;
-                        }
-                        return;
-
-                    // 2.12 LAN_X_STATUS_CHANGED
-                    case 0x62:
-                        MessageReceived?.Invoke(new TrackStatusChangedMessage((CentralState)message[6]));
-                        return;
-
-                    // 2.14 LAN_X_BC_STOPPED
-                    case 0x81:
-                        MessageReceived?.Invoke(new Message(MessageType.LAN_X_BC_STOPPED));
-                        return;
-
-                    // 2.15 LAN_X_GET_FIRMWARE_VERSION
-                    case 0xF3:
-                        MessageReceived?.Invoke(FirmwareVersionMessage.Parse(message));
-                        return;
-
-                    // 4.4 LAN_X_LOCO_INFO
-                    case 0xEF:
-                        MessageReceived?.Invoke(LocoInfoMessage.Parse(message));
-                        return;
-
-                    // 5.3 LAN_X_TURNOUT_INFO
-                    case 0x43:
-                        MessageReceived?.Invoke(TurnoutInfoMessage.Parse(message));
-                        return;
-
-                    // 5.6 LAN_X_EXT_ACCESSORY_INFO
-                    case 0x44:
-                        MessageReceived?.Invoke(AccessoryInfoMessage.Parse(message));
-                        return;
-
-                    // 6.5 LAN_X_CV_RESULT
-                    case 0x64:
-                        MessageReceived?.Invoke(CVResultMessage.Parse(message));
-                        return;
-                }
-            }
-
             // Message is not implemented / was not recognized
             MessageReceived?.Invoke(new NotImplementedMessage(message));
         }
 
+        private void ParseXbusMessage(ReadOnlySpan<byte> message, ushort length)
+        {
+            if (length < 6)
+                return;
+
+            switch (message[4])
+            {
+                // 2.3 LAN_X_GET_VERSION
+                case 0x63:
+                    MessageReceived?.Invoke(XBusVersionMessage.Parse(message));
+                    return;
+
+                case 0x61:
+                    switch (message[5])
+                    {
+                        // 2.7 LAN_X_BC_TRACK_POWER_OFF
+                        case 0x00:
+                            MessageReceived?.Invoke(new Message(MessageType.LAN_X_BC_TRACK_POWER_OFF));
+                            return;
+
+                        // 2.8 LAN_X_BC_TRACK_POWER_ON
+                        case 0x01:
+                            MessageReceived?.Invoke(new Message(MessageType.LAN_X_BC_TRACK_POWER_ON));
+                            return;
+
+                        // 2.9 LAN_X_BC_PROGRAMMING_MODE
+                        case 0x02:
+                            MessageReceived?.Invoke(new Message(MessageType.LAN_X_BC_PROGRAMMING_MODE));
+                            return;
+
+                        // 2.10 LAN_X_BC_TRACK_SHORT_CIRCUIT
+                        case 0x08:
+                            MessageReceived?.Invoke(new Message(MessageType.LAN_X_BC_TRACK_SHORT_CIRCUIT));
+                            return;
+
+                        // 2.11 LAN_X_UNKNOWN_COMMAND
+                        case 0x82:
+                            MessageReceived?.Invoke(new Message(MessageType.LAN_X_UNKNOWN_COMMAND));
+                            return;
+                        // 6.3 LAN_X_CV_NACK_SC
+                        case 0x12:
+                            MessageReceived?.Invoke(new Message(MessageType.LAN_X_CV_NACK_SC));
+                            return;
+                        // 6.4 LAN_X_CV_NACK
+                        case 0x13:
+                            MessageReceived?.Invoke(new Message(MessageType.LAN_X_CV_NACK));
+                            return;
+                    }
+                    return;
+
+                // 2.12 LAN_X_STATUS_CHANGED
+                case 0x62:
+                    MessageReceived?.Invoke(new TrackStatusChangedMessage((CentralState)message[6]));
+                    return;
+
+                // 2.14 LAN_X_BC_STOPPED
+                case 0x81:
+                    MessageReceived?.Invoke(new Message(MessageType.LAN_X_BC_STOPPED));
+                    return;
+
+                // 2.15 LAN_X_GET_FIRMWARE_VERSION
+                case 0xF3:
+                    MessageReceived?.Invoke(FirmwareVersionMessage.Parse(message));
+                    return;
+
+                // 4.4 LAN_X_LOCO_INFO
+                case 0xEF:
+                    MessageReceived?.Invoke(LocoInfoMessage.Parse(message));
+                    return;
+
+                // 5.3 LAN_X_TURNOUT_INFO
+                case 0x43:
+                    MessageReceived?.Invoke(TurnoutInfoMessage.Parse(message));
+                    return;
+
+                // 5.6 LAN_X_EXT_ACCESSORY_INFO
+                case 0x44:
+                    MessageReceived?.Invoke(AccessoryInfoMessage.Parse(message));
+                    return;
+
+                // 6.5 LAN_X_CV_RESULT
+                case 0x64:
+                    MessageReceived?.Invoke(CVResultMessage.Parse(message));
+                    return;
+            }
+        }
         #region Requests
         /// <summary>
         /// Sends buffer to Z21 command station
@@ -341,15 +357,10 @@ namespace Z21lib
         /// <param name="data">Data buffer</param>
         public bool Send(byte[] data)
         {
-            if (!Active || _sendBuffer.Position + data.Length > _sendBuffer.Capacity)
+            if (!Active || !_connected)
                 return false;
 
-            lock (_sendBuffer)
-            {
-                _sendBuffer.Write(data, 0, data.Length);
-            }
-
-            return true;
+            return _sendQueue.Writer.TryWrite(data);
         }
 
         /// <summary>
@@ -1050,7 +1061,27 @@ namespace Z21lib
 
         protected override void Dispose(bool disposing)
         {
-            _sendBuffer.Dispose();
+            if (disposing)
+            {
+                _connected = false;
+
+                // Cancel sending task
+                _cancellationTokenSource?.Cancel();
+
+                // Wait for sending task to complete
+                try
+                {
+                    _sendingTask?.Wait(TimeSpan.FromSeconds(5));
+                }
+                catch (AggregateException)
+                {
+                    // Ignore cancellation exceptions
+                }
+
+                // Dispose resources
+                _cancellationTokenSource?.Dispose();
+                _sendingTask?.Dispose();
+            }
 
             base.Dispose(disposing);
         }

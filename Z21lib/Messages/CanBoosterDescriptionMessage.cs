@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Z21lib.Endianity;
+﻿using Z21lib.Endianity;
 using Z21lib.Enums;
 
 namespace Z21lib.Messages
@@ -15,12 +14,12 @@ namespace Z21lib.Messages
 
         }
 
-        public static CanBoosterDescriptionMessage Parse(byte[] message)
+        public static CanBoosterDescriptionMessage Parse(ReadOnlySpan<byte> message)
         {
             return new CanBoosterDescriptionMessage
             {
-                NID = LE.ToUInt16(message, 4),
-                Description = Utils.ReadString(message, 6, 16)
+                NID = LE.ToUInt16(message.Slice(4)),
+                Description = Utils.ReadString(message.Slice(6).ToArray(), 0, 16)
             };
         }
     }
