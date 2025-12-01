@@ -1129,8 +1129,6 @@ namespace Z21lib
         {
             if (disposing)
             {
-                Active = false;
-
                 // Cancel sending task
                 _cancellationTokenSource?.Cancel();
 
@@ -1143,6 +1141,8 @@ namespace Z21lib
                 {
                     // Ignore cancellation exceptions
                 }
+
+                Active = false;
 
                 // Dispose resources
                 _cancellationTokenSource?.Dispose();
