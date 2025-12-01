@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using System.Buffers;
+using System.Diagnostics;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading.Channels;
 using Z21lib.Endianity;
@@ -17,6 +19,9 @@ namespace Z21lib
     {
         public delegate void MessageReceivedEventHandler(Message message);
         public event MessageReceivedEventHandler MessageReceived = default!;
+
+        private const int MAX_PACKET_SIZE = 1472;
+        private const int SEND_INTERVAL = 50;
 
         private IPAddress IP;
         private int Port;
@@ -44,31 +49,31 @@ namespace Z21lib
             try
             {
                 Connect(IP, Port);
+
+            if (!Active)
+                return false;
+
+                DontFragment = true;
+                EnableBroadcast = false;
+                BeginReceive(new AsyncCallback(Callback), null);
+
+                _cancellationTokenSource = new CancellationTokenSource();
+                _sendingTask = SendingLoopAsync(_cancellationTokenSource.Token);
+
+                _connected = true;
+                return LanGetSerialNumber();
             }
             catch
             {
                 return false;
             }
-
-            if (!Active)
-                return false;
-
-            DontFragment = true;
-            EnableBroadcast = false;
-            BeginReceive(new AsyncCallback(Callback), null);
-
-            _cancellationTokenSource = new CancellationTokenSource();
-            _sendingTask = SendingLoopAsync(_cancellationTokenSource.Token);
-
-            _connected = LanGetSerialNumber();
-            return _connected;
         }
 
         public void Disconnect()
         {
             _connected = false;
             _cancellationTokenSource?.Cancel();
-            _sendingTask?.Wait(TimeSpan.FromSeconds(5));
+            _sendingTask?.Wait(TimeSpan.FromSeconds(2));
         }
 
         public bool Reconnect()
@@ -79,34 +84,84 @@ namespace Z21lib
 
         private async Task SendingLoopAsync(CancellationToken cancellationToken)
         {
+            byte[] packetBuffer = ArrayPool<byte>.Shared.Rent(MAX_PACKET_SIZE);
+            
             try
             {
-                await foreach (var data in _sendQueue.Reader.ReadAllAsync(cancellationToken))
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    if (!Active || !_connected)
-                        break;
+                    int bufferPosition = 0;
+                    long startTicks = Stopwatch.GetTimestamp();
 
-                    try
+                    while (bufferPosition < MAX_PACKET_SIZE)
                     {
-                        Send(data, data.Length);
-                        
-                        // Wait 20ms before sending next message to prevent network overload
-                        await Task.Delay(100, cancellationToken);
+                        if (_sendQueue.Reader.TryPeek(out var data))
+                        {
+                            if (bufferPosition + data.Length > MAX_PACKET_SIZE)
+                                break;
+
+                            data.CopyTo(packetBuffer.AsSpan(bufferPosition));
+                            bufferPosition += data.Length;
+                            _sendQueue.Reader.TryRead(out _);
+                        }
+                        else
+                        {
+                            double elapsed = Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds;
+                            
+                            if (bufferPosition > 0 || elapsed >= SEND_INTERVAL)
+                                break;
+
+                            try
+                            {
+                                await Task.Delay(10, cancellationToken);
+                            }
+                            catch (OperationCanceledException)
+                            {
+                                throw;
+                            }
+                        }
                     }
-                    catch (OperationCanceledException)
+
+                    // Send combined buffer if we have any data
+                    if (bufferPosition > 0)
                     {
-                        throw;
+                        if (!Active || !_connected)
+                            break;
+
+                        try
+                        {
+                            Send(packetBuffer, bufferPosition);
+                        }
+                        catch
+                        {
+                            Disconnect();
+                            break;
+                        }
                     }
-                    catch
+
+                    // Maintain send interval
+                    double elapsedMs = Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds;
+                    int remainingDelay = SEND_INTERVAL - (int)elapsedMs;
+                    
+                    if (remainingDelay > 0)
                     {
-                        Disconnect();
-                        break;
+                        try
+                        {
+                            await Task.Delay(remainingDelay, cancellationToken);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            throw;
+                        }
                     }
                 }
             }
             catch (OperationCanceledException)
             {
-                // Expected when cancellation is requested
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(packetBuffer);
             }
         }
 

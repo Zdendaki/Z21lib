@@ -25,7 +25,7 @@ namespace TestClient
             sw.Start();
             byte i = 0;
 
-            while (true)
+            /*while (true)
             {
                 if (!client.IsConnected)
                 {
@@ -57,14 +57,12 @@ namespace TestClient
                 }
 
                 Thread.Sleep(10);
-            }
+            }*/
 
             
-            /*while (true)
+            while (true)
             {
                 string bytes = Console.ReadLine()!.ToLower();
-
-                
 
                 if (bytes.EndsWith("xx"))
                     client.Send(ComputeXOR(bytes.Replace("xx", null).ToByteArray()));
@@ -75,7 +73,13 @@ namespace TestClient
                 else if (bytes.StartsWith("li:"))
                     client.LanXGetLocoInfo(new(ushort.Parse(bytes.Replace("li:", null))));
                 else if (bytes.StartsWith("ss:"))
-                    client.LanXSetTurnout(new(ushort.Parse(bytes.Replace("ss:", null).Replace("+", null).Replace("-", null))), bytes.Last() == '+', false, true);
+                {
+                    Address address = new(ushort.Parse(bytes.Replace("ss:", null).Replace("+", null).Replace("-", null)));
+                    bool output = bytes.Last() != '+';
+                    client.LanXSetTurnout(address, true, output, true);
+                    Thread.Sleep(100);
+                    client.LanXSetTurnout(address, false, output, true);
+                }
                 else
                     client.Send(bytes.ToByteArray());
             }
@@ -90,7 +94,7 @@ namespace TestClient
 
             Array.Copy(input, output, input.Length);
             output[input.Length] = xor;
-            return output;*/
+            return output;
         }
 
         private static object _lock = new object();
