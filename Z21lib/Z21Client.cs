@@ -22,10 +22,10 @@ namespace Z21lib
 
         private const int MAX_PACKET_SIZE = 1472;
         private const int SEND_INTERVAL = 50;
+        const int SIO_UDP_CONNRESET = -1744830452; // SIO_UDP_CONNRESET
 
         private IPAddress IP;
         private int Port;
-        private bool _connected = false;
 
         private readonly Channel<byte[]> _sendQueue = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions
         {
@@ -42,6 +42,24 @@ namespace Z21lib
         {
             IP = IPAddress.Parse(info.IP);
             Port = info.Port;
+            DontFragment = true;
+            EnableBroadcast = false;
+            ApplyWindowsConnectionResetFix();
+        }
+
+        private void ApplyWindowsConnectionResetFix()
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                try
+                {
+                    Client.IOControl(SIO_UDP_CONNRESET, [0, 0, 0, 0], null);
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Warning: SIO_UDP_CONNRESET wasn't turned off: {ex.Message}");
+                }
+            }
         }
 
         public bool Connect()
@@ -50,18 +68,15 @@ namespace Z21lib
             {
                 Connect(IP, Port);
 
-            if (!Active)
-                return false;
+                if (!Active)
+                    return false;
 
-                DontFragment = true;
-                EnableBroadcast = false;
                 BeginReceive(new AsyncCallback(Callback), null);
 
                 _cancellationTokenSource = new CancellationTokenSource();
                 _sendingTask = SendingLoopAsync(_cancellationTokenSource.Token);
 
-                _connected = true;
-                return LanGetSerialNumber();
+                return true;
             }
             catch
             {
@@ -71,21 +86,15 @@ namespace Z21lib
 
         public void Disconnect()
         {
-            _connected = false;
             _cancellationTokenSource?.Cancel();
             _sendingTask?.Wait(TimeSpan.FromSeconds(2));
-        }
-
-        public bool Reconnect()
-        {
-            Disconnect();
-            return Connect();
+            Active = false;
         }
 
         private async Task SendingLoopAsync(CancellationToken cancellationToken)
         {
             byte[] packetBuffer = ArrayPool<byte>.Shared.Rent(MAX_PACKET_SIZE);
-            
+
             try
             {
                 while (!cancellationToken.IsCancellationRequested)
@@ -107,7 +116,7 @@ namespace Z21lib
                         else
                         {
                             double elapsed = Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds;
-                            
+
                             if (bufferPosition > 0 || elapsed >= SEND_INTERVAL)
                                 break;
 
@@ -125,7 +134,7 @@ namespace Z21lib
                     // Send combined buffer if we have any data
                     if (bufferPosition > 0)
                     {
-                        if (!Active || !_connected)
+                        if (!Active)
                             break;
 
                         try
@@ -142,7 +151,7 @@ namespace Z21lib
                     // Maintain send interval
                     double elapsedMs = Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds;
                     int remainingDelay = SEND_INTERVAL - (int)elapsedMs;
-                    
+
                     if (remainingDelay > 0)
                     {
                         try
@@ -313,6 +322,8 @@ namespace Z21lib
                 case 0xBA:
                     MessageReceived?.Invoke(LanBoosterSystemStateMessage.Parse(message));
                     return;
+
+                // TODO: 11.3, 12
             }
 
             // Message is not implemented / was not recognized
@@ -412,7 +423,7 @@ namespace Z21lib
         /// <param name="data">Data buffer</param>
         public bool Send(byte[] data)
         {
-            if (!Active || !_connected)
+            if (!Active)
                 return false;
 
             return _sendQueue.Writer.TryWrite(data);
@@ -1118,7 +1129,7 @@ namespace Z21lib
         {
             if (disposing)
             {
-                _connected = false;
+                Active = false;
 
                 // Cancel sending task
                 _cancellationTokenSource?.Cancel();
