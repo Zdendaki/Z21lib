@@ -33,9 +33,9 @@ namespace Z21lib.Messages
                 Time = GetTime(data.Slice(6, 3)),
                 Stop = data[8].Bit(7),
                 Halt = data[8].Bit(6),
-                Rate = (byte)(data[12] & 0b0011_1111),
-                Settings = (FcSettings)data[13],
-                XOR = data[14]
+                Rate = (byte)(data[9] & 0b0011_1111),
+                Settings = (FcSettings)data[10],
+                XOR = data[11]
             };
         }
 
