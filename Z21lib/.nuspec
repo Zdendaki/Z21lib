@@ -2,8 +2,8 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>Z21lib</id>
-        <version>1.1.0.0</version>
-        <description></description>
+        <version>1.2.0.0</version>
+        <description>Library for controlling Roco Z21 digital command station</description>
         <authors>Zdendaki</authors>
         <projectUrl></projectUrl>
     </metadata>

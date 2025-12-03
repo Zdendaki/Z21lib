@@ -25,7 +25,7 @@ namespace Z21lib.Messages
         {
         }
 
-        public static CanBoosterSystemstateMessage Parse(ReadOnlySpan<byte> message)
+        internal static CanBoosterSystemstateMessage Parse(ReadOnlySpan<byte> message)
         {
             return new CanBoosterSystemstateMessage
             {

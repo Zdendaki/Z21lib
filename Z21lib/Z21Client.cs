@@ -87,7 +87,14 @@ namespace Z21lib
         public void Disconnect()
         {
             _cancellationTokenSource?.Cancel();
-            _sendingTask?.Wait(TimeSpan.FromSeconds(2));
+            try
+            {
+                _sendingTask?.Wait(TimeSpan.FromSeconds(5));
+            }
+            catch (AggregateException)
+            {
+                // Ignore cancellation exceptions
+            }
             Active = false;
         }
 
@@ -323,7 +330,15 @@ namespace Z21lib
                     MessageReceived?.Invoke(LanBoosterSystemStateMessage.Parse(message));
                     return;
 
-                // TODO: 11.3, 12
+                // 11.3.4.1 LAN_DECODER_SYSTEMSTATE_DATACHANGED
+                case 0xDA:
+                    ParseDecoderMessage(message, length);
+                    return;
+
+                // 12.2 LAN_FAST_CLOCK_DATA
+                case 0xCD:
+                    MessageReceived?.Invoke(FastClockDataMessage.Parse(message));
+                    return;
             }
 
             // Message is not implemented / was not recognized
@@ -416,7 +431,19 @@ namespace Z21lib
                     return;
             }
         }
+
+        private void ParseDecoderMessage(ReadOnlySpan<byte> message, ushort length)
+        {
+            // 11.3.4.1 SwitchDecoderSystemState
+            if (length == 0x30)
+                MessageReceived?.Invoke(LanSwitchDecoderSystemStateMessage.Parse(message));
+
+            // 11.3.4.2 SignalDecoderSystemState
+            else if (length == 0x2E)
+                MessageReceived?.Invoke(LanSignalDecoderSystemStateMessage.Parse(message));
+        }
         #region Requests
+
         /// <summary>
         /// Sends buffer to Z21 command station
         /// </summary>
@@ -1135,7 +1162,7 @@ namespace Z21lib
                 // Wait for sending task to complete
                 try
                 {
-                    _sendingTask?.Wait(TimeSpan.FromSeconds(5));
+                    _sendingTask?.Wait(TimeSpan.FromSeconds(2));
                 }
                 catch (AggregateException)
                 {

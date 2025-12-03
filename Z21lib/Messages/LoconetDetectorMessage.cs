@@ -18,7 +18,7 @@ namespace Z21lib.Messages
 
         }
 
-        public static LoconetDetectorMessage Parse(ReadOnlySpan<byte> message)
+        internal static LoconetDetectorMessage Parse(ReadOnlySpan<byte> message)
         {
             byte dataLength;
             LoconetFeedbackType type = (LoconetFeedbackType)message[4];

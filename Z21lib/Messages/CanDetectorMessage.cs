@@ -31,7 +31,7 @@ namespace Z21lib.Messages
 
         }
 
-        public static CanDetectorMessage Parse(ReadOnlySpan<byte> message)
+        internal static CanDetectorMessage Parse(ReadOnlySpan<byte> message)
         {
             return new()
             {

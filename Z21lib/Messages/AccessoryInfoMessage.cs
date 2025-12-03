@@ -17,7 +17,7 @@ namespace Z21lib.Messages
             Status = status;
         }
 
-        public static AccessoryInfoMessage Parse(ReadOnlySpan<byte> message)
+        internal static AccessoryInfoMessage Parse(ReadOnlySpan<byte> message)
         {
             return new AccessoryInfoMessage(new Address(message[5], message[6]), message[7], (AccessoryStatus)message[8]);
         }

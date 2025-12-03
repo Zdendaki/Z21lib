@@ -18,14 +18,14 @@ namespace Z21lib.Messages
         {
         }
 
-        public static ZlinkHwInfoMessage Parse(ReadOnlySpan<byte> message)
+        internal static ZlinkHwInfoMessage Parse(ReadOnlySpan<byte> message)
         {
             return new()
             {
                 HwID = LE.ToUInt16(message.Slice(4)),
                 Version = new Version(message[6], message[7], LE.ToUInt16(message.Slice(8))),
-                MacAddress = Utils.ReadString(message.Slice(10).ToArray(), 0, 8),
-                Name = Utils.ReadString(message.Slice(28).ToArray(), 0, 33)
+                MacAddress = Utils.ReadString(message.Slice(10), 8),
+                Name = Utils.ReadString(message.Slice(28), 32)
             };
         }
     }

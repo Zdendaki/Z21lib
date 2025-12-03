@@ -14,12 +14,12 @@ namespace Z21lib.Messages
 
         }
 
-        public static CanBoosterDescriptionMessage Parse(ReadOnlySpan<byte> message)
+        internal static CanBoosterDescriptionMessage Parse(ReadOnlySpan<byte> message)
         {
             return new CanBoosterDescriptionMessage
             {
                 NID = LE.ToUInt16(message.Slice(4)),
-                Description = Utils.ReadString(message.Slice(6).ToArray(), 0, 16)
+                Description = Utils.ReadString(message.Slice(6), 16)
             };
         }
     }

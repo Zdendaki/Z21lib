@@ -11,9 +11,9 @@ namespace Z21lib.Messages
             Name = name;
         }
 
-        public static LanBoosterDescriptionMessage Parse(ReadOnlySpan<byte> message)
+        internal static LanBoosterDescriptionMessage Parse(ReadOnlySpan<byte> message)
         {
-            return new(Utils.ReadString(message.Slice(4).ToArray(), 0, 32));
+            return new(Utils.ReadString(message.Slice(4), 32));
         }
     }
 }

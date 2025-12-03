@@ -35,7 +35,7 @@ namespace Z21lib.Messages
         {
         }
 
-        public static LanBoosterSystemStateMessage Parse(ReadOnlySpan<byte> message)
+        internal static LanBoosterSystemStateMessage Parse(ReadOnlySpan<byte> message)
         {
             return new()
             {
