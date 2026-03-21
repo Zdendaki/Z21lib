@@ -15,7 +15,7 @@ namespace Z21lib
     /// <br /><br />
     /// <seealso href="https://www.z21.eu/media/Kwc_Basic_DownloadTag_Component/root-en-main_47-1652-959-downloadTag-download/default/d559b9cf/1699290380/z21-lan-protokoll-en.pdf">Z21 API Documentation</seealso>
     /// </summary>
-    public class Z21Client : UdpClient, IDisposable
+    public class Z21Client : UdpClient, IZ21Client, IDisposable
     {
         public delegate void MessageReceivedEventHandler(Message message);
         public event MessageReceivedEventHandler MessageReceived = default!;
@@ -24,8 +24,9 @@ namespace Z21lib
         private const int SEND_INTERVAL = 50;
         const int SIO_UDP_CONNRESET = -1744830452; // SIO_UDP_CONNRESET
 
-        private IPAddress IP;
-        private int Port;
+        private volatile int _errorCounter = 0;
+        private readonly IPAddress _ip;
+        private readonly int _port;
 
         private readonly Channel<byte[]> _sendQueue = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions
         {
@@ -38,10 +39,12 @@ namespace Z21lib
 
         public bool IsConnected => Active;
 
+        public int ErrorCount => _errorCounter;
+
         public Z21Client(Z21Info info) : base(info.Port)
         {
-            IP = IPAddress.Parse(info.IP);
-            Port = info.Port;
+            _ip = IPAddress.Parse(info.IP);
+            _port = info.Port;
             DontFragment = true;
             EnableBroadcast = false;
             ApplyWindowsConnectionResetFix();
@@ -66,7 +69,7 @@ namespace Z21lib
         {
             try
             {
-                Connect(IP, Port);
+                Connect(_ip, _port);
 
                 if (!Active)
                     return false;
@@ -199,10 +202,14 @@ namespace Z21lib
 
             while (position < buffer.Length)
             {
-                int length = GetMessageLength(buffer.AsSpan(position));
+                ReadOnlySpan<byte> message = buffer.AsSpan(position);
+                int length = GetMessageLength(message);
 
                 if (length < 4 || position + length > buffer.Length)
+                {
+                    OnInvalidMessageReceived(new InvalidDataMessage(message.ToArray()));
                     break;
+                }
 
                 ParseMessage(buffer.AsSpan(position, length));
                 position += length;
@@ -212,9 +219,9 @@ namespace Z21lib
         private int GetMessageLength(ReadOnlySpan<byte> input)
         {
             if (input.Length < 4)
-                throw Extensions.GetException(nameof(input), "Input data are too short!");
-
-            return LE.ToUInt16(input);
+                return 0;
+            else
+                return LE.ToUInt16(input);
         }
 
         private void ParseMessage(ReadOnlySpan<byte> message)
@@ -227,7 +234,7 @@ namespace Z21lib
                 // 2.1 LAN_GET_SERIAL_NUMBER
                 case 0x10:
                     uint serial = LE.ToUInt32(message.Slice(4));
-                    MessageReceived?.Invoke(new SerialNumberMessage(serial));
+                    OnSerialNumberReceived(new SerialNumberMessage(serial));
                     return;
 
                 // All X-BUS messages
@@ -237,97 +244,97 @@ namespace Z21lib
 
                 // 2.17 LAN_GET_BROADCASTFLAGS
                 case 0x51:
-                    MessageReceived?.Invoke(BroadcastFlagsMessage.Parse(message));
+                    OnBroadcastFlagsReceived(BroadcastFlagsMessage.Parse(message));
                     return;
 
                 // 2.18 LAN_SYSTEMSTATE_DATACHANGED
                 case 0x84:
-                    MessageReceived?.Invoke(SystemStateMessage.Parse(message));
+                    OnSystemStateReceived(SystemStateMessage.Parse(message));
                     return;
 
                 // 2.20 LAN_GET_HWINFO
                 case 0x1A:
-                    MessageReceived?.Invoke(HardwareTypeMessage.Parse(message));
+                    OnHwinfoReceived(HardwareTypeMessage.Parse(message));
                     return;
 
                 // 2.21 LAN_GET_CODE
                 case 0x18:
-                    MessageReceived?.Invoke(new DeviceCodeMessage((DeviceCode)message[4]));
+                    OnLanGetCodeReceived(new DeviceCodeMessage((DeviceCode)message[4]));
                     return;
 
                 // 3.1 LAN_GET_LOCOMODE
                 case 0x60:
-                    MessageReceived?.Invoke(LocoModeMessage.Parse(message));
+                    OnLocoModeReceived(LocoModeMessage.Parse(message));
                     return;
 
                 // 3.3 LAN_GET_TURNOUTMODE
                 case 0x70:
-                    MessageReceived?.Invoke(TurnoutModeMessage.Parse(message));
+                    OnTurnoutModeReceived(TurnoutModeMessage.Parse(message));
                     return;
 
                 // 7.1 LAN_RMBUS_DATACHANGED
                 case 0x80:
-                    MessageReceived?.Invoke(new RBusDataChangedMessage(message.Slice(4, 11)));
+                    OnRBusDataChangedReceived(new RBusDataChangedMessage(message.Slice(4, 11)));
                     return;
 
                 // 8.1 LAN_RAILCOM_DATACHANGED
                 case 0x88:
-                    MessageReceived?.Invoke(RailComDataMessage.Parse(message));
+                    OnRailComDataReceived(RailComDataMessage.Parse(message));
                     return;
 
                 // 9.1 LAN_LOCONET_Z21_RX
                 case 0xA0:
-                    MessageReceived?.Invoke(new LoconetMessage(MessageType.LAN_LOCONET_Z21_RX, message));
+                    OnLoconetRXReceived(new LoconetMessage(MessageType.LAN_LOCONET_Z21_RX, message));
                     return;
 
                 // 9.2 LAN_LOCONET_Z21_TX
                 case 0xA1:
-                    MessageReceived?.Invoke(new LoconetMessage(MessageType.LAN_LOCONET_Z21_TX, message));
+                    OnLoconetTXReceived(new LoconetMessage(MessageType.LAN_LOCONET_Z21_TX, message));
                     return;
 
                 // 9.3 LAN_LOCONET_FROM_LAN
                 case 0xA2:
-                    MessageReceived?.Invoke(new LoconetMessage(MessageType.LAN_LOCONET_FROM_LAN, message));
+                    OnLoconetFromLanReceived(new LoconetMessage(MessageType.LAN_LOCONET_FROM_LAN, message));
                     return;
 
                 // 9.4 LAN_LOCONET_DISPATCH_ADDR
                 case 0xA3:
-                    MessageReceived?.Invoke(LoconetDispatchMessage.Parse(message));
+                    OnLoconetDispatchReceived(LoconetDispatchMessage.Parse(message));
                     return;
 
                 // 9.5 LAN_LOCONET_DETECTOR
                 case 0xA4:
-                    MessageReceived?.Invoke(LoconetDetectorMessage.Parse(message));
+                    OnLoconetDetectorReceived(LoconetDetectorMessage.Parse(message));
                     return;
 
                 // 10.1 LAN_CAN_DETECTOR
                 case 0xC4:
-                    MessageReceived?.Invoke(CanDetectorMessage.Parse(message));
+                    OnCanDetectorReceived(CanDetectorMessage.Parse(message));
                     return;
 
                 // 10.2.1 LAN_CAN_DEVICE_GET_DESCRIPTION
                 case 0xC8:
-                    MessageReceived?.Invoke(CanBoosterDescriptionMessage.Parse(message));
+                    OnCanBoosterDescriptionReceived(CanBoosterDescriptionMessage.Parse(message));
                     return;
 
                 // 10.2.3 LAN_CAN_BOOSTER_SYSTEMSTATE_CHGD
                 case 0xCA:
-                    MessageReceived?.Invoke(CanBoosterSystemstateMessage.Parse(message));
+                    OnCanBoosterSystemStateChangedReceived(CanBoosterSystemStateMessage.Parse(message));
                     return;
 
                 // 11.1.1.1 LAN_ZLINK_GET_HWINFO
                 case 0xE8:
-                    MessageReceived?.Invoke(ZlinkHwInfoMessage.Parse(message));
+                    OnZlinkHwInfoReceived(ZlinkHwInfoMessage.Parse(message));
                     return;
 
                 // 11.2.1 LAN_BOOSTER_GET_DESCRIPTION
                 case 0xB8:
-                    MessageReceived?.Invoke(LanBoosterDescriptionMessage.Parse(message));
+                    OnLanBoosterDescriptionReceived(LanBoosterDescriptionMessage.Parse(message));
                     return;
 
                 // 11.2.4 LAN_BOOSTER_SYSTEMSTATE_DATACHANGED
                 case 0xBA:
-                    MessageReceived?.Invoke(LanBoosterSystemStateMessage.Parse(message));
+                    OnLanBoosterSystemStateChangedReceived(LanBoosterSystemStateMessage.Parse(message));
                     return;
 
                 // 11.3.4.1 LAN_DECODER_SYSTEMSTATE_DATACHANGED
@@ -337,12 +344,12 @@ namespace Z21lib
 
                 // 12.2 LAN_FAST_CLOCK_DATA
                 case 0xCD:
-                    MessageReceived?.Invoke(FastClockDataMessage.Parse(message));
+                    OnFastClockDataReceived(FastClockDataMessage.Parse(message));
                     return;
             }
 
             // Message is not implemented / was not recognized
-            MessageReceived?.Invoke(new NotImplementedMessage(message));
+            OnNotImplementedMessageReceived(new NotImplementedMessage(message));
         }
 
         private void ParseXbusMessage(ReadOnlySpan<byte> message, ushort length)
@@ -354,7 +361,7 @@ namespace Z21lib
             {
                 // 2.3 LAN_X_GET_VERSION
                 case 0x63:
-                    MessageReceived?.Invoke(XBusVersionMessage.Parse(message));
+                    OnXBusVersionReceived(XBusVersionMessage.Parse(message));
                     return;
 
                 case 0x61:
@@ -362,72 +369,72 @@ namespace Z21lib
                     {
                         // 2.7 LAN_X_BC_TRACK_POWER_OFF
                         case 0x00:
-                            MessageReceived?.Invoke(new Message(MessageType.LAN_X_BC_TRACK_POWER_OFF));
+                            OnTrackPowerOffReceived(new Message(MessageType.LAN_X_BC_TRACK_POWER_OFF));
                             return;
 
                         // 2.8 LAN_X_BC_TRACK_POWER_ON
                         case 0x01:
-                            MessageReceived?.Invoke(new Message(MessageType.LAN_X_BC_TRACK_POWER_ON));
+                            OnTrackPowerOnReceived(new Message(MessageType.LAN_X_BC_TRACK_POWER_ON));
                             return;
 
                         // 2.9 LAN_X_BC_PROGRAMMING_MODE
                         case 0x02:
-                            MessageReceived?.Invoke(new Message(MessageType.LAN_X_BC_PROGRAMMING_MODE));
+                            OnTrackProgrammingReceived(new Message(MessageType.LAN_X_BC_PROGRAMMING_MODE));
                             return;
 
                         // 2.10 LAN_X_BC_TRACK_SHORT_CIRCUIT
                         case 0x08:
-                            MessageReceived?.Invoke(new Message(MessageType.LAN_X_BC_TRACK_SHORT_CIRCUIT));
+                            OnTrackShortCircuitReceived(new Message(MessageType.LAN_X_BC_TRACK_SHORT_CIRCUIT));
                             return;
 
                         // 2.11 LAN_X_UNKNOWN_COMMAND
                         case 0x82:
-                            MessageReceived?.Invoke(new Message(MessageType.LAN_X_UNKNOWN_COMMAND));
+                            OnUnknownCommandReceived(new Message(MessageType.LAN_X_UNKNOWN_COMMAND));
                             return;
                         // 6.3 LAN_X_CV_NACK_SC
                         case 0x12:
-                            MessageReceived?.Invoke(new Message(MessageType.LAN_X_CV_NACK_SC));
+                            OnCvNackScReceived(new Message(MessageType.LAN_X_CV_NACK_SC));
                             return;
                         // 6.4 LAN_X_CV_NACK
                         case 0x13:
-                            MessageReceived?.Invoke(new Message(MessageType.LAN_X_CV_NACK));
+                            OnCvNackReceived(new Message(MessageType.LAN_X_CV_NACK));
                             return;
                     }
                     return;
 
                 // 2.12 LAN_X_STATUS_CHANGED
                 case 0x62:
-                    MessageReceived?.Invoke(new TrackStatusChangedMessage((CentralState)message[6]));
+                    OnTrackStatusChangedReceived(new TrackStatusChangedMessage((CentralState)message[6]));
                     return;
 
                 // 2.14 LAN_X_BC_STOPPED
                 case 0x81:
-                    MessageReceived?.Invoke(new Message(MessageType.LAN_X_BC_STOPPED));
+                    OnTrackStoppedReceived(new Message(MessageType.LAN_X_BC_STOPPED));
                     return;
 
                 // 2.15 LAN_X_GET_FIRMWARE_VERSION
                 case 0xF3:
-                    MessageReceived?.Invoke(FirmwareVersionMessage.Parse(message));
+                    OnFirmwareVersionReceived(FirmwareVersionMessage.Parse(message));
                     return;
 
                 // 4.4 LAN_X_LOCO_INFO
                 case 0xEF:
-                    MessageReceived?.Invoke(LocoInfoMessage.Parse(message));
+                    OnLocoInfoReceived(LocoInfoMessage.Parse(message));
                     return;
 
                 // 5.3 LAN_X_TURNOUT_INFO
                 case 0x43:
-                    MessageReceived?.Invoke(TurnoutInfoMessage.Parse(message));
+                    OnTurnoutInfoReceived(TurnoutInfoMessage.Parse(message));
                     return;
 
                 // 5.6 LAN_X_EXT_ACCESSORY_INFO
                 case 0x44:
-                    MessageReceived?.Invoke(AccessoryInfoMessage.Parse(message));
+                    OnExtAccessoryInfoReceived(AccessoryInfoMessage.Parse(message));
                     return;
 
                 // 6.5 LAN_X_CV_RESULT
                 case 0x64:
-                    MessageReceived?.Invoke(CVResultMessage.Parse(message));
+                    OnCVResultReceived(CVResultMessage.Parse(message));
                     return;
             }
         }
@@ -436,11 +443,11 @@ namespace Z21lib
         {
             // 11.3.4.1 SwitchDecoderSystemState
             if (length == 0x30)
-                MessageReceived?.Invoke(LanSwitchDecoderSystemStateMessage.Parse(message));
+                OnSwitchDecoderSystemStateReceived(SwitchDecoderSystemStateMessage.Parse(message));
 
             // 11.3.4.2 SignalDecoderSystemState
             else if (length == 0x2E)
-                MessageReceived?.Invoke(LanSignalDecoderSystemStateMessage.Parse(message));
+                OnSignalDecoderSystemStateReceived(SignalDecoderSystemStateMessage.Parse(message));
         }
         #region Requests
 
@@ -1146,10 +1153,102 @@ namespace Z21lib
             return Send([0x08, 0x00, 0xCF, 0x00, (byte)settings, rate, data2, data3]);
         }
         #endregion
+        #region Responses
+        protected virtual void OnSerialNumberReceived(SerialNumberMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnBroadcastFlagsReceived(BroadcastFlagsMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnSystemStateReceived(SystemStateMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnHwinfoReceived(HardwareTypeMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnLanGetCodeReceived(DeviceCodeMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnLocoModeReceived(LocoModeMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnTurnoutModeReceived(TurnoutModeMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnRBusDataChangedReceived(RBusDataChangedMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnRailComDataReceived(RailComDataMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnLoconetRXReceived(LoconetMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnLoconetTXReceived(LoconetMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnLoconetFromLanReceived(LoconetMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnLoconetDispatchReceived(LoconetDispatchMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnLoconetDetectorReceived(LoconetDetectorMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnCanDetectorReceived(CanDetectorMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnCanBoosterDescriptionReceived(CanBoosterDescriptionMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnCanBoosterSystemStateChangedReceived(CanBoosterSystemStateMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnZlinkHwInfoReceived(ZlinkHwInfoMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnLanBoosterDescriptionReceived(LanBoosterDescriptionMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnLanBoosterSystemStateChangedReceived(LanBoosterSystemStateMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnFastClockDataReceived(FastClockDataMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnXBusVersionReceived(XBusVersionMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnTrackPowerOffReceived(Message message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnTrackPowerOnReceived(Message message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnTrackProgrammingReceived(Message message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnTrackStoppedReceived(Message message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnTrackShortCircuitReceived(Message message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnUnknownCommandReceived(Message message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnCvNackReceived(Message message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnCvNackScReceived(Message message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnTrackStatusChangedReceived(TrackStatusChangedMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnFirmwareVersionReceived(FirmwareVersionMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnLocoInfoReceived(LocoInfoMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnTurnoutInfoReceived(TurnoutInfoMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnExtAccessoryInfoReceived(AccessoryInfoMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnCVResultReceived(CVResultMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnSwitchDecoderSystemStateReceived(SwitchDecoderSystemStateMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnSignalDecoderSystemStateReceived(SignalDecoderSystemStateMessage message) => MessageReceived?.Invoke(message);
+
+        protected virtual void OnInvalidMessageReceived(InvalidDataMessage message)
+        {
+            MessageReceived?.Invoke(message);
+            _errorCounter++;
+        }
+
+        protected virtual void OnNotImplementedMessageReceived(NotImplementedMessage message)
+        {
+            MessageReceived?.Invoke(message);
+            _errorCounter++;
+        }
+        #endregion
 
         private static int GetDayOfWeek(DayOfWeek day)
         {
-            return (((int)day + 6) % 7) << 5;
+            if (day == DayOfWeek.Sunday)
+                return 6 << 5;
+
+            return ((int)day - 1) << 5;
         }
 
         protected override void Dispose(bool disposing)

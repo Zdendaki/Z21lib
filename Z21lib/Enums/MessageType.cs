@@ -42,6 +42,7 @@
         LAN_DECODER_SYSTEMSTATE_DATACHANGED_SIGNAL,
         LAN_FAST_CLOCK_DATA,
         LAN_FAST_CLOCK_SETTINGS_GET,
+        INVALID_DATA = int.MaxValue - 1,
         NOT_IMPLEMENTED = int.MaxValue
     }
 }

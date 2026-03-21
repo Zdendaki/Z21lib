@@ -1,21 +1,23 @@
-﻿using Z21lib.Enums;
+﻿using System.Diagnostics.CodeAnalysis;
+using Z21lib.Enums;
 
-namespace Z21lib.Messages
+namespace Z21lib.Messages;
+
+public class NotImplementedMessage : Message
 {
-    public class NotImplementedMessage : Message
+    public required byte[] Blob { get; init; }
+
+    public string Data => BitConverter.ToString(Blob).ToUpperInvariant().Replace('-', ' ');
+
+    [SetsRequiredMembers]
+    public NotImplementedMessage(byte[] blob) : base(MessageType.NOT_IMPLEMENTED)
     {
-        public byte[] Binary { get; init; }
+        Blob = blob;
+    }
 
-        public string Data => BitConverter.ToString(Binary).ToUpperInvariant().Replace('-', ' ');
-
-        public NotImplementedMessage(byte[] data) : base(MessageType.NOT_IMPLEMENTED)
-        {
-            Binary = data;
-        }
-
-        internal NotImplementedMessage(ReadOnlySpan<byte> data) : base(MessageType.NOT_IMPLEMENTED)
-        {
-            Binary = data.ToArray();
-        }
+    [SetsRequiredMembers]
+    internal NotImplementedMessage(ReadOnlySpan<byte> data) : base(MessageType.NOT_IMPLEMENTED)
+    {
+        Blob = data.ToArray();
     }
 }

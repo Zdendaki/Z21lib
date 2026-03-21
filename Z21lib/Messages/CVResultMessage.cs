@@ -1,22 +1,17 @@
-﻿using Z21lib.Enums;
+﻿using System.Diagnostics.CodeAnalysis;
+using Z21lib.Enums;
 
-namespace Z21lib.Messages
+namespace Z21lib.Messages;
+
+[method: SetsRequiredMembers]
+public class CVResultMessage(byte msb, byte lsb, byte value) : Message(MessageType.LAN_X_CV_RESULT)
 {
-    public class CVResultMessage : Message
+    public required Address Address { get; init; } = new(msb, lsb);
+
+    public required byte Value { get; init; } = value;
+
+    internal static CVResultMessage Parse(ReadOnlySpan<byte> message)
     {
-        public Address Address { get; init; }
-
-        public byte Value { get; init; }
-
-        public CVResultMessage(byte msb, byte lsb, byte value) : base(MessageType.LAN_X_CV_RESULT)
-        {
-            Address = new(msb, lsb);
-            Value = value;
-        }
-
-        internal static CVResultMessage Parse(ReadOnlySpan<byte> message)
-        {
-            return new(message[6], message[7], message[8]);
-        }
+        return new(message[6], message[7], message[8]);
     }
 }

@@ -2,9 +2,9 @@
 {
     public readonly struct Address
     {
-        public ushort Value { get; init; }
+        public ushort Value { readonly get; init; }
 
-        public byte MSB
+        public readonly byte MSB
         {
             get
             {
@@ -12,7 +12,7 @@
             }
         }
 
-        public byte LSB
+        public readonly byte LSB
         {
             get
             {
@@ -30,7 +30,7 @@
             Value = (ushort)((msb << 8) + lsb);
         }
 
-        public override string ToString()
+        public readonly override string ToString()
         {
             return $"A{Value} [{MSB}, {LSB}]";
         }

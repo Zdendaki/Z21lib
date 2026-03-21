@@ -1,19 +1,15 @@
-﻿using Z21lib.Enums;
+﻿using System.Diagnostics.CodeAnalysis;
+using Z21lib.Enums;
 
-namespace Z21lib.Messages
+namespace Z21lib.Messages;
+
+[method: SetsRequiredMembers]
+public class LanBoosterDescriptionMessage(string name) : Message(MessageType.LAN_BOOSTER_GET_DESCRIPTION)
 {
-    public class LanBoosterDescriptionMessage : Message
+    public required string Name { get; init; } = name;
+
+    internal static LanBoosterDescriptionMessage Parse(ReadOnlySpan<byte> message)
     {
-        public string Name { get; init; }
-
-        public LanBoosterDescriptionMessage(string name) : base(MessageType.LAN_BOOSTER_GET_DESCRIPTION)
-        {
-            Name = name;
-        }
-
-        internal static LanBoosterDescriptionMessage Parse(ReadOnlySpan<byte> message)
-        {
-            return new(Utils.ReadString(message.Slice(4), 32));
-        }
+        return new(Utils.ReadString(message.Slice(4), 32));
     }
 }

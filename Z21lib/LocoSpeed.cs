@@ -1,17 +1,19 @@
-﻿using Z21lib.Enums;
+﻿using System.Diagnostics.CodeAnalysis;
+using Z21lib.Enums;
 
 namespace Z21lib
 {
     public readonly struct LocoSpeed
     {
-        public bool EmergencyStop { get; init; }
+        public required bool EmergencyStop { readonly get; init; }
 
-        public SpeedSteps SpeedSteps { get; init; }
+        public required SpeedSteps SpeedSteps { readonly get; init; }
 
-        public LocoDirection Direction { get; init; }
+        public required LocoDirection Direction { readonly get; init; }
 
-        public byte Speed { get; init; }
+        public required byte Speed { readonly get; init; }
 
+        [SetsRequiredMembers]
         public LocoSpeed(SpeedSteps steps, LocoDirection direction, byte speed, bool emergencyStop = false)
         {
             if (steps == SpeedSteps.DCC14 && speed > 14)
@@ -31,7 +33,7 @@ namespace Z21lib
 
         public static byte GetStop(LocoDirection direction) => (byte)direction;
 
-        public byte GetByte()
+        public readonly byte GetByte()
         {
             byte output = (byte)Direction;
 

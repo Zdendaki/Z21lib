@@ -1,9 +1,13 @@
 ﻿namespace Z21lib.Endianity
 {
-    ref struct LittleEndianReader
+    internal ref struct LittleEndianReader
     {
-        private ReadOnlySpan<byte> _buffer;
+        private readonly ReadOnlySpan<byte> _buffer;
         private int _position;
+
+        public readonly int Position => _position;
+
+        public readonly int Remaining => _buffer.Length - _position;
 
         public LittleEndianReader(ReadOnlySpan<byte> data)
         {
@@ -16,10 +20,6 @@
             _buffer = data;
             _position = startPosition;
         }
-
-        public readonly int Position => _position;
-
-        public readonly int Remaining => _buffer.Length - _position;
 
         public short ReadInt16()
         {

@@ -2,26 +2,26 @@
 {
     public class BitArray
     {
-        byte[] array;
+        private readonly byte[] _array;
 
         public BitArray()
         {
-            array = new byte[8];
+            _array = new byte[8];
 
             for (int i = 0; i < 8; i++)
-                array[i] = 0;
+                _array[i] = 0;
         }
 
         public BitArray(params byte[] input)
         {
-            array = new byte[8];
+            _array = new byte[8];
 
             FromBits(input);
         }
 
         public BitArray(byte input)
         {
-            array = new byte[8];
+            _array = new byte[8];
 
             FromByte(input);
         }
@@ -30,7 +30,7 @@
         {
             for (int i = 0; i < 8; i++)
             {
-                array[i] = (byte)(input.Bit(i) ? 1 : 0);
+                _array[i] = (byte)(input.Bit(i) ? 1 : 0);
             }
         }
 
@@ -39,13 +39,13 @@
             Array.Reverse(input);
             for (int i = 0; i < 8; i++)
             {
-                array[i] = (byte)(input[i] != 0 ? 1 : 0);
+                _array[i] = (byte)(input[i] != 0 ? 1 : 0);
             }
         }
 
         public void SetBit(int index, byte value)
         {
-            array[index] = (byte)(value != 0 ? 1 : 0);
+            _array[index] = (byte)(value != 0 ? 1 : 0);
         }
 
         public byte ToByte()
@@ -54,7 +54,7 @@
 
             for (int i = 0; i < 8; i++)
             {
-                output += (byte)(array[i] << i);
+                output += (byte)(_array[i] << i);
             }
 
             return output;

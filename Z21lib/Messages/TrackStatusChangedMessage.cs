@@ -1,14 +1,10 @@
-﻿using Z21lib.Enums;
+﻿using System.Diagnostics.CodeAnalysis;
+using Z21lib.Enums;
 
-namespace Z21lib.Messages
+namespace Z21lib.Messages;
+
+[method: SetsRequiredMembers]
+public class TrackStatusChangedMessage(CentralState status) : Message(MessageType.LAN_X_STATUS_CHANGED)
 {
-    public class TrackStatusChangedMessage : Message
-    {
-        public CentralState Status { get; init; }
-
-        public TrackStatusChangedMessage(CentralState status) : base(MessageType.LAN_X_STATUS_CHANGED)
-        {
-            Status = status;
-        }
-    }
+    public required CentralState Status { get; init; } = status;
 }

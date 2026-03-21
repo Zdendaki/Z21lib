@@ -1,15 +1,12 @@
-﻿namespace Z21lib.Structs
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Z21lib.Structs
 {
-    public struct Z21Info
+    [method: SetsRequiredMembers]
+    public readonly struct Z21Info(string ip, int port)
     {
-        public string IP { get; set; }
+        public required string IP { readonly get; init; } = ip;
 
-        public int Port { get; set; }
-
-        public Z21Info(string ip, int port)
-        {
-            IP = ip;
-            Port = port;
-        }
+        public required int Port { readonly get; init; } = port;
     }
 }

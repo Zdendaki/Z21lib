@@ -1,14 +1,9 @@
-﻿using Z21lib.Enums;
+﻿using System.Diagnostics.CodeAnalysis;
+using Z21lib.Enums;
 
-namespace Z21lib.Messages
+namespace Z21lib.Messages;
+
+public class Message(MessageType type)
 {
-    public class Message
-    {
-        public MessageType Type { get; set; }
-
-        public Message(MessageType type)
-        {
-            Type = type;
-        }
-    }
+    public MessageType Type { get; init; } = type;
 }

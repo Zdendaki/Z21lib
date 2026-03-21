@@ -1,8 +1,10 @@
-﻿namespace Z21lib
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Z21lib
 {
-    public struct LocoAddress
+    public readonly struct LocoAddress
     {
-        public byte MSB
+        public readonly byte MSB
         {
             get
             {
@@ -13,10 +15,11 @@
             }
         }
 
-        public byte LSB => (byte)(Address & 0xFF);
+        public readonly byte LSB => (byte)(Address & 0xFF);
 
-        public ushort Address { get; }
+        public required ushort Address { readonly get; init; }
 
+        [SetsRequiredMembers]
         public LocoAddress(byte msb, byte lsb)
         {
             Address = (ushort)(((msb & 0x3F) << 8) + lsb);
@@ -25,6 +28,7 @@
                 throw new ArgumentOutOfRangeException(nameof(msb), "Maximum allowed address is 10239.");
         }
 
+        [SetsRequiredMembers]
         public LocoAddress(ushort number)
         {
             if (number > 10239)
@@ -33,7 +37,7 @@
             Address = number;
         }
 
-        public override string ToString()
+        public readonly override string ToString()
         {
             return $"L{Address} [{MSB}, {LSB}]";
         }

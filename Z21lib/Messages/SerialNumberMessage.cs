@@ -1,14 +1,10 @@
-﻿using Z21lib.Enums;
+﻿using System.Diagnostics.CodeAnalysis;
+using Z21lib.Enums;
 
-namespace Z21lib.Messages
+namespace Z21lib.Messages;
+
+[method: SetsRequiredMembers]
+public class SerialNumberMessage(uint serial) : Message(MessageType.LAN_GET_SERIAL_NUMBER)
 {
-    public class SerialNumberMessage : Message
-    {
-        public uint SerialNumber { get; set; }
-
-        public SerialNumberMessage(uint serial) : base(MessageType.LAN_GET_SERIAL_NUMBER)
-        {
-            SerialNumber = serial;
-        }
-    }
+    public required uint SerialNumber { get; init; } = serial;
 }
