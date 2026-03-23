@@ -11,6 +11,8 @@ namespace Z21lib
 
         bool Connect();
         void Disconnect();
+        ValueTask DisconnectAsync();
+        ValueTask DisposeAsync();
         bool LanBoosterGetDescription();
         bool LanBoosterSetDescription(string description);
         bool LanBoosterSetPower(BoosterPort port, bool activate);

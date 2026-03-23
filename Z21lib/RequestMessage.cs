@@ -11,7 +11,7 @@ namespace Z21lib
         /// <param name="data">Message data</param>
         /// <param name="mode">Message modus</param>
         /// <returns></returns>
-        public static byte[] CreateMode(ushort header, byte[] data, byte mode)
+        public static byte[] CreateMode(ushort header, ReadOnlySpan<byte> data, byte mode)
         {
             ushort length = (ushort)(data.Length + 5);
             byte[] message = new byte[length];
@@ -20,7 +20,7 @@ namespace Z21lib
             LE.Write(span, length);
             LE.Write(span.Slice(2), header);
             data.CopyTo(span.Slice(4));
-            message[message.Length - 2] = mode;
+            message[^2] = mode;
 
             return message;
         }
@@ -31,7 +31,7 @@ namespace Z21lib
         /// <param name="header">Header (big endian)</param>
         /// <param name="data">Message data</param>
         /// <returns>Message byte array</returns>
-        public static byte[] Create(ushort header, byte[] data)
+        public static byte[] Create(ushort header, ReadOnlySpan<byte> data)
         {
             ushort length = (ushort)(data.Length + 4);
             byte[] message = new byte[length];
@@ -44,7 +44,7 @@ namespace Z21lib
             return message;
         }
 
-        public static byte[] CreateXOR(ushort header, byte[] data)
+        public static byte[] CreateXOR(ushort header, ReadOnlySpan<byte> data)
         {
             ushort length = (ushort)(data.Length + 5);
             byte[] message = new byte[length];
@@ -59,7 +59,7 @@ namespace Z21lib
             {
                 xor ^= data[i];
             }
-            message[message.Length - 1] = xor;
+            message[^1] = xor;
 
             return message;
         }
@@ -69,7 +69,7 @@ namespace Z21lib
             return CreateXOR(0x40, data);
         }
 
-        public static byte[] CreateLocoNet(ushort header, byte[] data)
+        public static byte[] CreateLocoNet(ushort header, ReadOnlySpan<byte> data)
         {
             ushort length = (ushort)(data.Length + 5);
             byte[] message = new byte[length];
@@ -84,7 +84,7 @@ namespace Z21lib
             {
                 xor ^= data[i];
             }
-            message[message.Length - 1] = (byte)~xor;
+            message[^1] = (byte)~xor;
 
             return message;
         }

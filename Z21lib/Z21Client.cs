@@ -15,14 +15,14 @@ namespace Z21lib
     /// <br /><br />
     /// <seealso href="https://www.z21.eu/media/Kwc_Basic_DownloadTag_Component/root-en-main_47-1652-959-downloadTag-download/default/d559b9cf/1699290380/z21-lan-protokoll-en.pdf">Z21 API Documentation</seealso>
     /// </summary>
-    public class Z21Client : UdpClient, IZ21Client, IDisposable
+    public class Z21Client : UdpClient, IZ21Client, IAsyncDisposable
     {
         public delegate void MessageReceivedEventHandler(Message message);
         public event MessageReceivedEventHandler MessageReceived = default!;
 
         private const int MAX_PACKET_SIZE = 1472;
         private const int SEND_INTERVAL = 50;
-        const int SIO_UDP_CONNRESET = -1744830452; // SIO_UDP_CONNRESET
+        private const int SIO_UDP_CONNRESET = -1744830452;
 
         private volatile int _errorCounter = 0;
         private readonly IPAddress _ip;
@@ -35,16 +35,24 @@ namespace Z21lib
         });
 
         private CancellationTokenSource? _cancellationTokenSource;
+        private Task? _receivingTask;
         private Task? _sendingTask;
 
         public bool IsConnected => Active;
 
         public int ErrorCount => _errorCounter;
 
-        public Z21Client(Z21Info info) : base(info.Port)
+        public Z21Client(Z21Info info, bool useFixedLocalPort = false) : base()
         {
+            if (useFixedLocalPort)
+            {
+                Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                Client.Bind(new IPEndPoint(IPAddress.Any, info.Port));
+            }
+
             _ip = IPAddress.Parse(info.IP);
             _port = info.Port;
+            
             DontFragment = true;
             EnableBroadcast = false;
             ApplyWindowsConnectionResetFix();
@@ -74,9 +82,8 @@ namespace Z21lib
                 if (!Active)
                     return false;
 
-                BeginReceive(new AsyncCallback(Callback), null);
-
                 _cancellationTokenSource = new CancellationTokenSource();
+                _receivingTask = ReceivingLoopAsync(_cancellationTokenSource.Token);
                 _sendingTask = SendingLoopAsync(_cancellationTokenSource.Token);
 
                 return true;
@@ -92,85 +99,77 @@ namespace Z21lib
             _cancellationTokenSource?.Cancel();
             try
             {
-                _sendingTask?.Wait(TimeSpan.FromSeconds(5));
+                _sendingTask?.Wait(TimeSpan.FromSeconds(1));
+                _receivingTask?.Wait(TimeSpan.FromSeconds(1));
             }
-            catch (AggregateException)
+            catch (Exception ex) when (ex is TimeoutException or OperationCanceledException)
             {
                 // Ignore cancellation exceptions
             }
             Active = false;
         }
 
-        private async Task SendingLoopAsync(CancellationToken cancellationToken)
+        public async ValueTask DisconnectAsync()
         {
-            byte[] packetBuffer = ArrayPool<byte>.Shared.Rent(MAX_PACKET_SIZE);
+            _cancellationTokenSource?.Cancel();
 
             try
             {
-                while (!cancellationToken.IsCancellationRequested)
+                if (_sendingTask is not null)
+                    await _sendingTask.WaitAsync(TimeSpan.FromSeconds(1));
+
+                if (_receivingTask is not null)
+                    await _receivingTask.WaitAsync(TimeSpan.FromSeconds(1));
+            }
+            catch (Exception ex) when (ex is TimeoutException or OperationCanceledException)
+            {
+                // Ignore cancellation exceptions
+            }
+
+            Active = false;
+        }
+
+        private async Task SendingLoopAsync(CancellationToken cancellationToken)
+        {
+            byte[] packetBuffer = ArrayPool<byte>.Shared.Rent(MAX_PACKET_SIZE);
+            long lastSent = 0;
+
+            try
+            {
+                while (await _sendQueue.Reader.WaitToReadAsync(cancellationToken))
                 {
-                    int bufferPosition = 0;
-                    long startTicks = Stopwatch.GetTimestamp();
-
-                    while (bufferPosition < MAX_PACKET_SIZE)
+                    if (lastSent > 0)
                     {
-                        if (_sendQueue.Reader.TryPeek(out var data))
-                        {
-                            if (bufferPosition + data.Length > MAX_PACKET_SIZE)
-                                break;
+                        int elapsedMs = (int)Stopwatch.GetElapsedTime(lastSent).TotalMilliseconds;
+                        int remainingDelay = SEND_INTERVAL - elapsedMs;
 
-                            data.CopyTo(packetBuffer.AsSpan(bufferPosition));
-                            bufferPosition += data.Length;
-                            _sendQueue.Reader.TryRead(out _);
-                        }
-                        else
-                        {
-                            double elapsed = Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds;
-
-                            if (bufferPosition > 0 || elapsed >= SEND_INTERVAL)
-                                break;
-
-                            try
-                            {
-                                await Task.Delay(10, cancellationToken);
-                            }
-                            catch (OperationCanceledException)
-                            {
-                                throw;
-                            }
-                        }
+                        if (remainingDelay > 0)
+                            await Task.Delay(remainingDelay, cancellationToken);
                     }
 
-                    // Send combined buffer if we have any data
-                    if (bufferPosition > 0)
+                    int bufferPosition = 0;
+
+                    while (_sendQueue.Reader.TryPeek(out byte[]? data))
                     {
-                        if (!Active)
+                        if (bufferPosition + data.Length > MAX_PACKET_SIZE)
                             break;
 
+                        data.CopyTo(packetBuffer.AsSpan(bufferPosition));
+                        bufferPosition += data.Length;
+                        _sendQueue.Reader.TryRead(out _);
+                    }
+
+                    if (bufferPosition > 0 && Active)
+                    {
                         try
                         {
                             Send(packetBuffer, bufferPosition);
+                            lastSent = Stopwatch.GetTimestamp();
                         }
                         catch
                         {
                             Disconnect();
                             break;
-                        }
-                    }
-
-                    // Maintain send interval
-                    double elapsedMs = Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds;
-                    int remainingDelay = SEND_INTERVAL - (int)elapsedMs;
-
-                    if (remainingDelay > 0)
-                    {
-                        try
-                        {
-                            await Task.Delay(remainingDelay, cancellationToken);
-                        }
-                        catch (OperationCanceledException)
-                        {
-                            throw;
                         }
                     }
                 }
@@ -184,22 +183,32 @@ namespace Z21lib
             }
         }
 
-        private void Callback(IAsyncResult result)
+        private async Task ReceivingLoopAsync(CancellationToken cancellationToken)
         {
-            IPEndPoint? sender = null!;
-            byte[] buffer = EndReceive(result, ref sender);
-            if (Active)
-                BeginReceive(new AsyncCallback(Callback), null);
-            ParseData(buffer);
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    UdpReceiveResult result = await ReceiveAsync(cancellationToken);
+                    if (result.Buffer == null || result.Buffer.Length < 4)
+                        continue;
+
+                    ParseData(result.Buffer);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            catch (SocketException)
+            {
+                if (Active)
+                    Disconnect();
+            }
         }
 
         private void ParseData(byte[] buffer)
         {
-            if (buffer == null || buffer.Length < 4)
-                return;
-
             int position = 0;
-
             while (position < buffer.Length)
             {
                 ReadOnlySpan<byte> message = buffer.AsSpan(position);
@@ -216,7 +225,7 @@ namespace Z21lib
             }
         }
 
-        private int GetMessageLength(ReadOnlySpan<byte> input)
+        private static int GetMessageLength(ReadOnlySpan<byte> input)
         {
             if (input.Length < 4)
                 return 0;
@@ -1076,7 +1085,7 @@ namespace Z21lib
         public bool LanFastClockControl_SetFastClockTime(DateTime time, byte rate)
         {
             if (rate > 63)
-                Extensions.GetException(nameof(rate), "Rate must be between 0 and 63!");
+                throw Extensions.GetException(nameof(rate), "Rate must be between 0 and 63!");
 
             byte data2 = (byte)(GetDayOfWeek(time.DayOfWeek) + time.Hour);
             byte data3 = (byte)time.Minute;
@@ -1131,7 +1140,7 @@ namespace Z21lib
         public bool LanFastClockSettingsSet(FcSettings settings, byte rate)
         {
             if (rate > 63)
-                Extensions.GetException(nameof(rate), "Rate must be between 0 and 63!");
+                throw Extensions.GetException(nameof(rate), "Rate must be between 0 and 63!");
 
             return Send([0x06, 0x00, 0xCF, 0x00, (byte)settings, rate]);
         }
@@ -1145,7 +1154,7 @@ namespace Z21lib
         public bool LanFastClockSettingsSet(FcSettings settings, byte rate, DateTime time)
         {
             if (rate > 63)
-                Extensions.GetException(nameof(rate), "Rate must be between 0 and 63!");
+                throw Extensions.GetException(nameof(rate), "Rate must be between 0 and 63!");
 
             byte data2 = (byte)(GetDayOfWeek(time.DayOfWeek) + time.Hour);
             byte data3 = (byte)time.Minute;
@@ -1233,13 +1242,13 @@ namespace Z21lib
         protected virtual void OnInvalidMessageReceived(InvalidDataMessage message)
         {
             MessageReceived?.Invoke(message);
-            _errorCounter++;
+            Interlocked.Increment(ref _errorCounter);
         }
 
         protected virtual void OnNotImplementedMessageReceived(NotImplementedMessage message)
         {
             MessageReceived?.Invoke(message);
-            _errorCounter++;
+            Interlocked.Increment(ref _errorCounter);
         }
         #endregion
 
@@ -1255,27 +1264,45 @@ namespace Z21lib
         {
             if (disposing)
             {
-                // Cancel sending task
                 _cancellationTokenSource?.Cancel();
-
-                // Wait for sending task to complete
-                try
-                {
-                    _sendingTask?.Wait(TimeSpan.FromSeconds(2));
-                }
-                catch (AggregateException)
-                {
-                    // Ignore cancellation exceptions
-                }
-
                 Active = false;
 
-                // Dispose resources
                 _cancellationTokenSource?.Dispose();
                 _sendingTask?.Dispose();
+                _receivingTask?.Dispose();
             }
 
             base.Dispose(disposing);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            // Cancel sending task
+            _cancellationTokenSource?.Cancel();
+
+            // Wait for sending task to complete
+            try
+            {
+                if (_sendingTask is not null)
+                    await _sendingTask.WaitAsync(TimeSpan.FromSeconds(1));
+
+                if (_receivingTask is not null)
+                    await _receivingTask.WaitAsync(TimeSpan.FromSeconds(1));
+            }
+            catch (Exception ex) when (ex is TimeoutException or OperationCanceledException)
+            {
+                // Ignore cancellation exceptions
+            }
+
+            Active = false;
+
+            // Dispose resources
+            _cancellationTokenSource?.Dispose();
+            _sendingTask?.Dispose();
+            _receivingTask?.Dispose();
+
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }

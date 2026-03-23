@@ -1,0 +1,42 @@
+name: Release and NuGet Pack
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore Z21lib/Z21lib.csproj
+
+    - name: Build project
+      run: dotnet build Z21lib/Z21lib.csproj --configuration Release --no-restore
+
+    - name: Pack NuGet package
+      run: dotnet pack Z21lib/Z21lib.csproj --configuration Release --no-restore -o out
+
+    - name: Upload NuGet Package to GitHub Release
+      # Podmínka: Spustí se pouze v případě, že pipeline vyvolal 'release'
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v2
+      with:
+        files: out/*.nupkg
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Push NuGet Package to NuGet.org
+      run: dotnet nuget push out/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
